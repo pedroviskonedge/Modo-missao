@@ -5,7 +5,7 @@
   "description": "Modo Missão - app de hábitos (Android via Capacitor)",
   "scripts": {
     "android:add": "cap add android",
-    "android:icons": "capacitor-assets generate --android --iconBackgroundColor #000000 --iconBackgroundColorDark #000000 --splashBackgroundColor #000000 --splashBackgroundColorDark #000000",
+    "android:icons": "capacitor-assets generate --android --iconBackgroundColor '#000000' --iconBackgroundColorDark '#000000' --splashBackgroundColor '#000000' --splashBackgroundColorDark '#000000'",
     "android:sync": "cap sync android",
     "android:open": "cap open android"
   },
