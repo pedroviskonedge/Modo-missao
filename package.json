@@ -1,26 +1,21 @@
 {
-  "name": "modo-missao-desktop",
+  "name": "modo-missao",
   "version": "1.0.0",
   "private": true,
-  "description": "Modo Missão para Windows",
-  "author": "Modo Missão",
-  "main": "main.js",
+  "description": "Modo Missão - app de hábitos (Android via Capacitor)",
   "scripts": {
-    "copy-web": "node -e \"require('fs').rmSync('www',{recursive:true,force:true});require('fs').cpSync('../www','www',{recursive:true})\"",
-    "start": "npm run copy-web && electron .",
-    "dist": "npm run copy-web && electron-builder --win nsis portable --publish never"
+    "android:add": "cap add android",
+    "android:icons": "capacitor-assets generate --android --iconBackgroundColor #000000 --iconBackgroundColorDark #000000 --splashBackgroundColor #000000 --splashBackgroundColorDark #000000",
+    "android:sync": "cap sync android",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/local-notifications": "^7.0.0"
   },
   "devDependencies": {
-    "electron": "^33.2.1",
-    "electron-builder": "^25.1.8"
-  },
-  "build": {
-    "appId": "br.modomissao.app",
-    "productName": "Modo Missão",
-    "files": ["main.js", "preload.js", "www/**/*", "build/icon.png", "build/tray.png"],
-    "directories": { "output": "dist", "buildResources": "build" },
-    "win": { "icon": "build/icon.ico", "artifactName": "ModoMissao-${version}-${arch}-${target}.${ext}" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Modo Missão" },
-    "portable": { "artifactName": "ModoMissao-${version}-portatil.exe" }
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0"
   }
 }
