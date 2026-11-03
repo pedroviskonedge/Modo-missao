@@ -1,0 +1,9 @@
+{
+  "appId": "br.modomissao.app",
+  "appName": "Modo Missão",
+  "webDir": "www",
+  "android": { "backgroundColor": "#000000" },
+  "plugins": {
+    "LocalNotifications": { "iconColor": "#00FF41" }
+  }
+}

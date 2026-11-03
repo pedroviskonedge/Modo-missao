@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Modo Missão</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E6F2E7; --surface:#F4FBF4; --ink:#063D14; --muted:#3E6B48; --line:#A9CDB0;
+  --green:#0A8A2A; --glow:transparent; --dim:#BFE0C4; --alert:#C0261F; --alert-soft:#F8DEDB; --warn:#9A6A00;
+  --rain:#0A8A2A;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#000000; --surface:#030A04; --ink:#B8FFC6; --muted:#3FA857; --line:#0E3A17;
+    --green:#00FF41; --glow:rgba(0,255,65,.45); --dim:#062A0E; --alert:#FF3B3B; --alert-soft:#2A0606; --warn:#FFC23D;
+    --rain:#00FF41;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#000000; --surface:#030A04; --ink:#B8FFC6; --muted:#3FA857; --line:#0E3A17;
+  --green:#00FF41; --glow:rgba(0,255,65,.45); --dim:#062A0E; --alert:#FF3B3B; --alert-soft:#2A0606; --warn:#FFC23D;
+  --rain:#00FF41;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Share Tech Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:15px;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding:16px 14px 48px}
+.big{font-family:"VT323","Share Tech Mono",ui-monospace,monospace;font-weight:400}
+h2{font-family:"VT323",ui-monospace,monospace;font-weight:400;font-size:1.6rem;margin:0 0 8px;color:var(--green);text-shadow:0 0 8px var(--glow)}
+h2::before{content:"> "}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+
+/* Hero */
+.player{position:relative;border:1px solid var(--green);border-radius:6px;padding:16px;overflow:hidden;background:var(--surface);box-shadow:0 0 24px var(--glow) inset}
+#rain{position:absolute;inset:0;width:100%;height:100%;opacity:.22;pointer-events:none}
+.player>*:not(canvas){position:relative}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.title{font-family:"VT323",monospace;font-size:1.25rem;color:var(--muted)}
+.lvl .num{font-size:4.6rem;line-height:.85;color:var(--green);text-shadow:0 0 14px var(--glow)}
+.lvl .lab{color:var(--muted)}
+.streak{text-align:right}
+.streak .num{font-size:2.6rem;line-height:.9;color:var(--green);text-shadow:0 0 10px var(--glow)}
+.streak .lab{color:var(--muted);font-size:.85rem}
+.xpbar{margin-top:14px;font-size:.95rem;color:var(--green);white-space:nowrap;overflow:hidden}
+.xpline{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin-top:2px;gap:8px;flex-wrap:wrap}
+.xpline .neg{color:var(--alert)}
+.week7{display:flex;gap:4px;margin-top:10px}
+.week7 span{flex:1;text-align:center;font-size:.8rem;padding:3px 0;border:1px solid var(--line);color:var(--muted)}
+.week7 span.full{background:var(--green);color:var(--bg);border-color:var(--green)}
+.week7 span.half{border-color:var(--green);color:var(--green)}
+.week7 span.fail{border-color:var(--alert);color:var(--alert)}
+.week7 span.today{outline:1px dashed var(--green);outline-offset:2px}
+
+/* cobrança console */
+.console{margin-top:12px;border:1px solid var(--line);border-left:3px solid var(--alert);background:var(--surface);padding:10px 12px;font-size:.9rem;border-radius:0 6px 6px 0}
+.console div{margin:2px 0}
+.console .a{color:var(--alert)}
+.console .w{color:var(--warn)}
+.console .ok{color:var(--green)}
+
+.tabs{display:flex;gap:4px;margin:16px 0 14px;border:1px solid var(--line);border-radius:6px;padding:3px;background:var(--surface);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.tabs button{flex:1;border:0;background:transparent;padding:9px 4px;border-radius:4px;color:var(--muted);font-size:.9rem}
+.tabs button[aria-selected="true"]{background:var(--green);color:var(--bg)}
+
+section{margin-bottom:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px}
+.sub{color:var(--muted);font-size:.88rem;margin:0 0 10px}
+
+.quest{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:6px}
+.quest .box{flex:0 0 auto;color:var(--muted)}
+.quest .txt{flex:1;min-width:0}
+.quest .t{display:block}
+.quest .d{font-size:.8rem;color:var(--muted)}
+.quest .xp{font-size:.8rem;color:var(--muted);white-space:nowrap;text-align:right}
+.quest.done{border-color:var(--green)}
+.quest.done .box,.quest.done .t{color:var(--green);text-shadow:0 0 6px var(--glow)}
+.quest.late{border-color:var(--alert);background:var(--alert-soft)}
+.quest.late .box,.quest.late .xp{color:var(--alert)}
+
+.water{display:flex;gap:6px;flex-wrap:wrap}
+.drop{width:40px;height:44px;border:1px solid var(--line);border-radius:4px;background:transparent;color:var(--muted);font-size:.8rem}
+.drop.on{background:var(--green);border-color:var(--green);color:var(--bg);box-shadow:0 0 8px var(--glow)}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.row b{font-family:"VT323",monospace;font-weight:400;font-size:1.8rem;color:var(--green)}
+
+input,textarea{width:100%;padding:10px;border-radius:4px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:48px;resize:vertical}
+.walk{display:flex;align-items:center;gap:10px;margin-top:6px}
+.walk input{width:90px}
+label.f{display:block;font-size:.88rem;margin:10px 0 4px;color:var(--muted)}
+
+/* terminal chat */
+.term{background:var(--surface);border:1px solid var(--green);border-radius:6px;display:flex;flex-direction:column;height:min(68vh,560px);box-shadow:0 0 16px var(--glow) inset}
+.log{flex:1;overflow-y:auto;padding:12px;font-size:.92rem}
+.msg{margin:0 0 12px;white-space:pre-wrap;word-wrap:break-word}
+.msg .who{font-size:.78rem;color:var(--muted);display:block}
+.msg.sys .body{color:var(--green);text-shadow:0 0 5px var(--glow)}
+.msg.me .body{color:var(--ink)}
+.msg .fx{display:block;font-size:.8rem;color:var(--warn);margin-top:2px}
+.cursor{display:inline-block;width:.6em;background:var(--green);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.compose{display:flex;gap:6px;border-top:1px solid var(--line);padding:8px}
+.compose textarea{min-height:44px;max-height:120px}
+.btn{border:1px solid var(--green);background:var(--green);color:var(--bg);border-radius:4px;padding:10px 14px;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--green)}
+.hint{font-size:.8rem;color:var(--muted);margin:8px 0 0}
+
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.badge{border:1px dashed var(--line);border-radius:6px;padding:10px;color:var(--muted);font-size:.85rem}
+.badge b{display:block;font-weight:400}
+.badge.got{border:1px solid var(--green);color:var(--green);text-shadow:0 0 5px var(--glow)}
+.weigh{display:flex;gap:6px;margin-top:6px}
+.wlog{list-style:none;padding:0;margin:10px 0 0}
+.wlog li{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line)}
+
+.alert{border:1px solid var(--alert);color:var(--alert);border-radius:6px;padding:12px;font-size:.85rem;margin-top:24px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(120px);background:var(--bg);color:var(--green);border:1px solid var(--green);box-shadow:0 0 14px var(--glow);padding:10px 16px;border-radius:4px;transition:transform .3s ease;z-index:20;max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.bad{color:var(--alert);border-color:var(--alert)}
+.saved{font-size:.78rem;color:var(--muted);text-align:center;margin-top:18px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}#rain{display:none}}
+.tabs button{font-size:.82rem;padding:9px 2px}
+.brief{border:1px solid var(--green);border-radius:6px;padding:12px 14px;background:var(--surface);margin-bottom:16px}
+.brief .hd{font-family:"VT323",monospace;font-size:1.35rem;color:var(--green);text-shadow:0 0 8px var(--glow)}
+.brief p{margin:4px 0;font-size:.9rem}
+.brief .k{color:var(--muted)}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.btn.alertbtn{background:transparent;border-color:var(--alert);color:var(--alert)}
+.failbox{margin-top:10px;border:1px solid var(--alert);border-radius:6px;padding:10px}
+.failbox .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.failbox .opts button{border:1px solid var(--alert);background:transparent;color:var(--alert);border-radius:4px;padding:8px 10px;font-size:.85rem}
+.faillist{list-style:none;margin:8px 0 0;padding:0;font-size:.85rem;color:var(--alert)}
+details.side{border:1px solid var(--line);border-radius:6px;margin-bottom:6px;background:var(--surface)}
+details.side summary{list-style:none;display:flex;gap:10px;align-items:center;padding:10px 12px;cursor:pointer}
+details.side summary::-webkit-details-marker{display:none}
+details.side .tag{font-size:.72rem;border:1px solid var(--line);padding:1px 6px;border-radius:3px;color:var(--muted);white-space:nowrap}
+details.side .body{padding:0 12px 12px;font-size:.88rem;color:var(--muted)}
+details.side .body b{color:var(--ink);font-weight:400}
+details.side.done{border-color:var(--green)}
+details.side.done summary .t{color:var(--green);text-shadow:0 0 6px var(--glow)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.calc{margin-top:8px;font-size:.9rem;color:var(--green)}
+.meal{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--surface)}
+.meal .t{flex:1;font-size:.9rem}
+.meal .t small{display:block;color:var(--muted);font-size:.78rem}
+.meal button{border:1px solid var(--green);background:transparent;color:var(--green);border-radius:4px;padding:6px 10px;font-size:.8rem;white-space:nowrap}
+.meal.eaten{border-color:var(--green)}
+.meal.eaten button{background:var(--green);color:var(--bg)}
+.mealtabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}
+.mealtabs button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:4px;padding:6px 10px;font-size:.82rem}
+.mealtabs button[aria-pressed="true"]{border-color:var(--green);color:var(--green)}
+.recipe{border:1px solid var(--warn);border-radius:6px;padding:14px;background:var(--surface)}
+.recipe h3{font-family:"VT323",monospace;font-weight:400;font-size:1.5rem;margin:0;color:var(--warn)}
+.recipe ul,.recipe ol{padding-left:20px;margin:6px 0;font-size:.9rem}
+.recipe .meta{font-size:.82rem;color:var(--muted)}
+.recipe.done{border-color:var(--green)}
+.recipe.done h3{color:var(--green)}
+.ctr{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.ctr .lb{flex:1;font-size:.92rem}
+.ctr .n{font-family:"VT323",monospace;font-size:1.9rem;line-height:1;color:var(--green);min-width:2.5ch;text-align:center}
+.ctr button{width:42px;height:42px;border:1px solid var(--green);background:transparent;color:var(--green);border-radius:4px;font-size:1.2rem}
+.ctr button:disabled{opacity:.35;cursor:default}
+.usetable{width:100%;border-collapse:collapse;margin-top:12px;font-size:.88rem}
+.usetable th,.usetable td{padding:6px 4px;border-top:1px solid var(--line);text-align:center}
+.usetable th{color:var(--muted);font-weight:400}
+.usetable td:first-child,.usetable th:first-child{text-align:left}
+.usetable tr.tot td{color:var(--green);border-top:1px solid var(--green)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.chips button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:4px;padding:7px 10px;font-size:.84rem}
+.chips button[aria-pressed="true"]{border-color:var(--green);color:var(--green);box-shadow:0 0 6px var(--glow)}
+.album{border:1px solid var(--green);border-radius:6px;padding:14px;margin-top:10px;background:var(--bg)}
+.album .an{font-family:"VT323",monospace;font-size:1.7rem;line-height:1.05;color:var(--green);text-shadow:0 0 8px var(--glow)}
+.album .ar{font-size:.95rem;margin-top:2px}
+.album .why{font-size:.88rem;color:var(--muted);margin:8px 0 10px}
+.album .links{display:flex;gap:6px;flex-wrap:wrap}
+.album .links a{flex:1;min-width:140px;text-align:center;text-decoration:none;border:1px solid var(--green);border-radius:4px;padding:10px;color:var(--bg);background:var(--green)}
+.album .links a.alt{background:transparent;color:var(--green)}
+.mhist{list-style:none;padding:0;margin:12px 0 0;font-size:.85rem}
+.mhist li{padding:6px 0;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.mhist li span:last-child{color:var(--muted);white-space:nowrap}
+.mhist a{color:var(--ink)}
+.fab{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:1rem;opacity:.55;z-index:15;transition:opacity .2s}
+.fab:hover,.fab:focus-visible{opacity:1}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;z-index:30;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.ov[hidden]{display:none!important}
+.sheet{width:100%;max-width:520px;max-height:85vh;overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px}
+.sheet .x{float:right;border:0;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1}
+.sheet h3{margin:0 0 4px;font-family:"VT323",monospace;font-weight:400;font-size:1.5rem}
+.chat-card{border-left:3px solid var(--warn);padding:10px 12px;margin:10px 0;background:var(--surface);border-radius:0 6px 6px 0;font-size:.95rem}
+.chat-card .hook{display:block;margin-top:8px;color:var(--muted);font-size:.88rem}
+.sheet.soft h3{color:var(--ink)}
+.breath{width:150px;height:150px;margin:18px auto;border-radius:50%;border:2px solid var(--green);display:grid;place-items:center;text-align:center;box-shadow:0 0 20px var(--glow);transform:scale(.6);transition:transform 4s ease-in-out}
+.breath.big{transform:scale(1)}
+.breath b{font-family:"VT323",monospace;font-weight:400;font-size:1.6rem;color:var(--green);display:block;line-height:1}
+.breath small{color:var(--muted);font-size:.8rem}
+.steps{font-size:.9rem;color:var(--muted);margin:0 0 8px}
+.sos-tip{border:1px solid var(--green);border-radius:6px;padding:10px 12px;margin-top:10px;font-size:.92rem}
+.sos-tip ul{margin:6px 0 0;padding-left:18px}
+@media (prefers-reduced-motion: reduce){.breath{transform:none!important}}
+@media (max-width:420px){.grid3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="player" aria-label="Seu progresso">
+    <canvas id="rain" aria-hidden="true"></canvas>
+    <div class="top">
+      <div>
+        <div class="title">MODO_MISSÃO // operador</div>
+        <div class="lvl"><span class="num big" id="lvl">1</span> <span class="lab">nível</span></div>
+      </div>
+      <div class="streak"><div class="num big" id="streak">0</div><div class="lab">dias seguidos</div></div>
+    </div>
+    <div class="xpbar" id="xpbar" aria-hidden="true"></div>
+    <div class="xpline"><span id="xptext"></span><span id="pen"></span></div>
+    <div class="week7" id="week7" aria-label="Últimos 7 dias"></div>
+  </header>
+
+  <div class="console" id="console" role="status" aria-live="polite"></div>
+  <div class="actions">
+    <button class="btn alertbtn" id="failBtn" aria-expanded="false">Registrar falha</button>
+    <button class="btn ghost" id="sosBtn">Protocolo SOS · 2 min</button>
+  </div>
+  <div class="failbox" id="failBox" hidden>
+    <div>Registrar com honestidade faz parte do protocolo. Cada falha custa 15 XP. O que importa é a próxima ação.</div>
+    <div class="opts" id="failOpts"></div>
+    <div class="weigh" style="margin-top:8px"><input id="failOther" placeholder="outra falha…" aria-label="Descreva outra falha"><button class="btn alertbtn" id="failOtherBtn">Registrar</button></div>
+    <ul class="faillist" id="failList"></ul>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="dia">Hoje</button>
+    <button role="tab" aria-selected="false" data-tab="terminal">Terminal</button>
+    <button role="tab" aria-selected="false" data-tab="cardapio">Cardápio</button>
+    <button role="tab" aria-selected="false" data-tab="semana">Semana</button>
+    <button role="tab" aria-selected="false" data-tab="conquistas">Status</button>
+  </nav>
+
+  <main>
+    <div id="tab-dia">
+      <div class="brief" id="brief"></div>
+
+      <section class="panel">
+        <div class="row"><h2>água</h2><b id="waterL">0,0 L</b></div>
+        <p class="sub" id="waterSub"></p>
+        <div class="water" id="water"></div>
+      </section>
+
+      <section>
+        <h2>missões principais</h2>
+        <p class="sub" id="mainSub"></p>
+        <div id="daily"></div>
+      </section>
+
+      <section>
+        <h2>missões secundárias</h2>
+        <p class="sub">Bônus de XP. Não contam pra fechar o dia, contam pra evoluir. Toque pra ler o briefing.</p>
+        <div id="side"></div>
+        <div class="actions"><button class="btn ghost" id="reroll">Trocar uma missão (1 por dia)</button></div>
+      </section>
+
+      <section class="panel">
+        <h2>sono</h2>
+        <p class="sub">Horário que dormiu ontem e que acordou hoje. Entre 7 e 9 horas marca a missão de sono.</p>
+        <div class="grid2">
+          <div><label class="f" for="sleepA">Dormiu às</label><input id="sleepA" type="time"></div>
+          <div><label class="f" for="sleepB">Acordou às</label><input id="sleepB" type="time"></div>
+        </div>
+        <div class="calc" id="sleepCalc"></div>
+      </section>
+
+      <section class="panel">
+        <h2>caminhada</h2>
+        <p class="sub" id="walkTarget"></p>
+        <div class="grid3">
+          <div><label class="f" for="walkMin">Minutos</label><input id="walkMin" type="number" inputmode="numeric" min="0" max="300" placeholder="0"></div>
+          <div><label class="f" for="walkKm">Distância (km)</label><input id="walkKm" type="number" inputmode="decimal" step="0.1" min="0" max="50" placeholder="0,0"></div>
+          <div><label class="f" for="walkSteps">Passos</label><input id="walkSteps" type="number" inputmode="numeric" min="0" max="80000" placeholder="0"></div>
+        </div>
+        <div class="calc" id="walkCalc"></div>
+      </section>
+
+      <section class="panel">
+        <h2>trilha sonora</h2>
+        <p class="sub">O sistema recomenda um álbum pro momento e abre direto no YouTube Music.</p>
+        <div class="chips" id="musicMood"></div>
+        <label class="f" for="musicTaste">O que você curte ouvir (opcional)</label>
+        <input id="musicTaste" placeholder="ex.: rap nacional, rock, eletrônica, MPB…">
+        <button class="btn" id="musicGen" style="width:100%;margin-top:10px">Recomendar álbum</button>
+        <div id="album"></div>
+        <ul class="mhist" id="musicHist"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>registro de consumo</h2>
+        <p class="sub">Só pra você acompanhar. Não vale XP e não conta como falha.</p>
+        <div id="useCounters"></div>
+        <p class="sub" style="margin:12px 0 0">Bebida alcoólica</p>
+        <div id="alcCounters"></div>
+        <div class="calc" id="useTotal"></div>
+        <div style="overflow-x:auto"><table class="usetable" id="useTable"></table></div>
+      </section>
+
+      <section class="panel">
+        <h2>diário da noite</h2>
+        <p class="sub">Os três campos preenchidos valem +25 XP e contam como missão.</p>
+        <label class="f" for="j1">O que deu certo hoje?</label><textarea id="j1"></textarea>
+        <label class="f" for="j2">Pelo que você é grato?</label><textarea id="j2"></textarea>
+        <label class="f" for="j3">O que vai fazer amanhã?</label><textarea id="j3"></textarea>
+      </section>
+    </div>
+
+    <div id="tab-terminal" hidden>
+      <section>
+        <div class="term">
+          <div class="log" id="chatlog" aria-live="polite"></div>
+          <div class="compose">
+            <textarea id="chatIn" placeholder="registre algo ou peça um ajuste no app…" aria-label="Mensagem para o sistema"></textarea>
+            <button class="btn" id="chatSend">Enviar</button>
+          </div>
+        </div>
+        <p class="hint" id="chatHint">Registre o que fez e o sistema marca as missões. Peça ajustes como “cria uma missão de estudar 1h às terças” ou “muda o prazo do café pra 9h”. Digite /ajuda pra ver os comandos.</p>
+      </section>
+    </div>
+
+    <div id="tab-cardapio" hidden>
+      <section class="panel">
+        <h2>receita do sistema</h2>
+        <p class="sub">Faça a receita sugerida e ganhe +50 XP de bônus especial. Uma por dia.</p>
+        <div class="weigh"><input id="recipeHave" placeholder="o que você tem em casa? (opcional)" aria-label="Ingredientes que você tem"><button class="btn" id="recipeGen">Gerar</button></div>
+        <div id="recipe" style="margin-top:10px"></div>
+      </section>
+      <section>
+        <h2>opções de cardápio</h2>
+        <p class="sub" id="menuSub">Escolha uma opção por refeição e toque em “comi” pra registrar. Café com proteína e almoço + jantar marcam missões.</p>
+        <div class="mealtabs" id="mealTabs"></div>
+        <div id="meals"></div>
+      </section>
+    </div>
+
+    <div id="tab-semana" hidden>
+      <section>
+        <h2>missões da semana</h2>
+        <p class="sub" id="weekLabel"></p>
+        <div id="weekly"></div>
+      </section>
+      <section class="panel">
+        <h2>pesagem semanal</h2>
+        <p class="sub">Uma vez por semana, mesmo dia, de manhã, em jejum. Olhe a tendência, não o número de um dia.</p>
+        <div class="weigh"><input id="weight" type="number" inputmode="decimal" step="0.1" min="30" max="300" placeholder="kg" aria-label="Peso em kg"><button class="btn" id="saveWeight">Registrar</button></div>
+        <ul class="wlog" id="weightLog"></ul>
+      </section>
+    </div>
+
+    <div id="tab-conquistas" hidden>
+      <section>
+        <h2>conquistas</h2>
+        <div class="badges" id="badges"></div>
+      </section>
+      <section class="panel">
+        <h2>seu porquê</h2>
+        <p class="sub">Por que você começou. O sistema usa isso pra te lembrar quando a motivação cair.</p>
+        <textarea id="why" style="min-height:80px"></textarea>
+      </section>
+      <section class="panel">
+        <h2>notificações</h2>
+        <p class="sub" id="ntfSub">O app avisa 30 minutos antes do prazo de cada missão pendente e cobra água, caminhada e diário.</p>
+        <button class="btn" id="ntfOn">Ativar notificações</button>
+        <div class="calc" id="ntfState"></div>
+      </section>
+      <section class="panel">
+        <h2>servidor do sistema</h2>
+        <p class="sub">Terminal, receitas, álbuns e assuntos usam IA por um servidor seu (veja o LEIA-ME). Sem servidor, receitas, álbuns e assuntos usam a lista offline.</p>
+        <label class="f" for="apiUrl">Endereço do servidor</label>
+        <input id="apiUrl" placeholder="https://seu-projeto.vercel.app" inputmode="url" autocomplete="off">
+        <label class="f" for="apiToken">Senha do app (APP_TOKEN)</label>
+        <input id="apiToken" type="password" autocomplete="off">
+        <div class="actions"><button class="btn" id="apiSave">Salvar</button><button class="btn ghost" id="apiTest">Testar conexão</button></div>
+        <div class="calc" id="apiState"></div>
+      </section>
+      <section class="panel">
+        <h2>backup</h2>
+        <p class="sub">Exporte pra levar seu progresso pro outro aparelho. Importar substitui os dados deste aparelho.</p>
+        <div class="actions"><button class="btn" id="bkGen">Exportar</button><button class="btn ghost" id="bkCopy" hidden>Copiar</button></div>
+        <textarea id="bkOut" hidden style="min-height:110px;margin-top:8px;font-size:.75rem" placeholder="cole aqui o código de backup"></textarea>
+        <div class="actions"><button class="btn ghost" id="bkPaste">Importar backup</button><button class="btn alertbtn" id="bkApply" hidden>Confirmar importação</button></div>
+      </section>
+    </div>
+
+    <div class="alert"><b>[ALERTA_CORPO]</b> Procure atendimento se tiver dor forte na barriga (principalmente do lado direito ou indo para as costas), vômito que não passa, tontura forte, urina muito escura ou quase nenhuma, ou dor no peito na caminhada.</div>
+    <p class="saved" id="saved"></p>
+  </main>
+</div>
+<button class="fab" id="chitBtn" aria-label="Assunto pra conversa" title="Assunto pra conversa">💬</button>
+<div class="ov" id="chitOv" hidden role="dialog" aria-modal="true" aria-labelledby="chitTitle">
+  <div class="sheet soft">
+    <button class="x" data-close aria-label="Fechar">×</button>
+    <h3 id="chitTitle">Assunto na manga</h3>
+    <p class="sub">Uma curiosidade ou um jeito de puxar conversa. Não vale ponto, é só pra você.</p>
+    <div class="chips" id="chitType"></div>
+    <div class="chips" id="chitWhere"></div>
+    <div id="chitOut"></div>
+    <div class="actions"><button class="btn" id="chitGen">Gerar</button><button class="btn ghost" id="chitCopy" hidden>Copiar</button></div>
+  </div>
+</div>
+<div class="ov" id="sosOv" hidden role="dialog" aria-modal="true" aria-labelledby="sosTitle">
+  <div class="sheet">
+    <button class="x" data-close aria-label="Fechar">×</button>
+    <h3 id="sosTitle" style="color:var(--green)">&gt; protocolo SOS</h3>
+    <p class="steps" id="sosStep"></p>
+    <div id="sosBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* ================== dados ================== */
+const BUILTIN = [
+  {id:"acordar", t:"Acordar no horário", d:"Mesmo horário, até no fim de semana", xp:10, ate:9, aulaAte:7},
+  {id:"sono", t:"Dormiu 7 a 9 horas", d:"Use a calculadora de sono abaixo", xp:15, ate:11},
+  {id:"cafe", t:"Café com proteína", d:"Ovos, iogurte ou queijo branco", xp:15, ate:10, aulaAte:7.75},
+  {id:"sol", t:"Pegar sol", d:"10 a 15 minutos", xp:10, ate:12, aulaAte:13},
+  {id:"proteina", t:"Proteína no almoço e no jantar", d:"Do tamanho da palma da mão", xp:15, ate:21},
+  {id:"limpo", t:"Zero refri, doce e fritura", d:"Marque à noite, se cumpriu", xp:20, ate:24},
+  {id:"respira", t:"Respiração 4-4-6", d:"5 ciclos, pelo menos uma vez", xp:10, ate:22},
+  {id:"telas", t:"Telas off 1h antes de dormir", d:"Marque antes de deitar", xp:15, ate:24}
+];
+const WEEKLY = [
+  {id:"pesar", t:"Pesar uma vez", d:"Registre abaixo", xp:30},
+  {id:"prep", t:"Deixar comida pronta", d:"Frango desfiado, legumes, ovos cozidos", xp:40},
+  {id:"role", t:"Um rolê sem comida", d:"Amigos, jogo, passeio", xp:30},
+  {id:"foto", t:"Foto ou medida da cintura", d:"A cada duas semanas está ótimo", xp:20},
+  {id:"conversa", t:"Contar seu progresso pra alguém", d:"Amigo, família ou profissional", xp:20}
+];
+const SIDE = [
+  {id:"s_pergunta", cat:"social", aula:true, t:"Abra a boca na aula", xp:25, b:"Faça uma pergunta ou um comentário durante a aula.", w:"Falar em grupo é um músculo. Cada vez que você fala, o cérebro registra que é seguro, e a próxima fica mais fácil.", c:"Feito quando você falou pelo menos uma vez em voz alta pra turma ou pro professor."},
+  {id:"s_colega", cat:"social", aula:true, t:"Contato com um colega novo", xp:20, b:"Puxe assunto com alguém da turma com quem você ainda não conversou. Vale perguntar sobre um trabalho, uma matéria ou um projeto.", w:"Rede de contatos em ADS abre porta pra estágio e projeto. Começa com um “e aí, entendeu essa parte?”.", c:"Feito quando rolou uma troca de pelo menos 3 frases."},
+  {id:"s_foco", cat:"mental", t:"Foco 25", xp:20, b:"Um bloco de 25 minutos de estudo ou código com o celular em outro cômodo.", w:"Foco profundo é raro e treinável. Um bloco por dia já muda seu rendimento na faculdade.", c:"Feito quando os 25 minutos rolaram sem pegar o celular."},
+  {id:"s_codigo", cat:"mental", t:"Desafio de lógica", xp:20, b:"Resolva um exercício de lógica ou programação (Beecrowd, LeetCode fácil, ou lista da faculdade).", w:"Resolver problema pequeno todo dia é como caminhada pro raciocínio. Constância vence intensidade.", c:"Feito quando você chegou numa solução, mesmo que não seja a mais bonita."},
+  {id:"s_aprendi", cat:"mental", aula:true, t:"Ensinar pra si mesmo", xp:15, b:"Escreva em 3 frases o que aprendeu na aula hoje, como se fosse explicar pra alguém.", w:"Explicar é a forma mais rápida de fixar. Se não conseguir explicar, você descobriu o que revisar.", c:"Feito com as 3 frases escritas em qualquer lugar."},
+  {id:"s_elogio", cat:"confiança", t:"Elogio sincero", xp:15, b:"Faça um elogio verdadeiro e específico pra alguém. Nada genérico.", w:"Quem reconhece o valor dos outros com naturalidade passa segurança. E muda o clima de qualquer ambiente.", c:"Feito quando você falou, não só pensou."},
+  {id:"s_postura", cat:"confiança", t:"Postura de operador", xp:10, b:"Durante o dia, três vezes: ombros pra trás, queixo reto, respiração lenta por 1 minuto.", w:"O corpo manda sinal pra cabeça. Postura aberta reduz a sensação de ameaça e melhora como você se apresenta.", c:"Feito após as três checagens."},
+  {id:"s_qualidades", cat:"confiança", t:"Três qualidades", xp:15, b:"Escreva três coisas que você fez bem essa semana ou três qualidades suas, com um exemplo real de cada.", w:"Autoconfiança não é achismo: é ter provas. Você está juntando as suas.", c:"Feito com as três escritas e um exemplo em cada."},
+  {id:"s_desconforto", cat:"confiança", t:"Pequeno desconforto", xp:25, b:"Faça uma coisa pequena que te dá vergonha: pedir informação, ligar em vez de mandar mensagem, perguntar o preço, pedir desconto.", w:"Confiança cresce de enfrentar o desconforto em doses pequenas. O medo encolhe quando você age.", c:"Feito quando você agiu, independente do resultado."},
+  {id:"s_amigo", cat:"social", t:"Reativar contato", xp:15, b:"Mande mensagem pra um amigo ou parente com quem você não fala faz tempo. Pergunte como ele está.", w:"Relações se mantêm com pequenos gestos. E apoio social é um dos maiores fatores de sucesso em mudança de hábito.", c:"Feito com a mensagem enviada."},
+  {id:"s_escuta", cat:"social", t:"Escuta de verdade", xp:15, b:"Em uma conversa hoje, faça três perguntas sobre a outra pessoa e escute sem olhar o celular.", w:"As pessoas lembram de quem as escuta. É a habilidade social mais subestimada.", c:"Feito após as três perguntas."},
+  {id:"s_convite", cat:"social", t:"Convite pra caminhar", xp:25, b:"Chame alguém pra fazer a caminhada com você hoje ou essa semana.", w:"Treino em dupla dura mais e você ainda fortalece uma amizade.", c:"Feito com o convite feito, mesmo que a pessoa não possa."},
+  {id:"s_leitura", cat:"mental", t:"10 páginas", xp:15, b:"Leia 10 páginas de um livro que não seja da faculdade.", w:"Leitura treina atenção longa, o oposto do scroll infinito.", c:"Feito com as 10 páginas lidas."},
+  {id:"s_ordem", cat:"mental", t:"Ambiente limpo", xp:10, b:"10 minutos arrumando quarto ou mesa de estudo.", w:"Ambiente organizado reduz ruído mental e facilita começar as coisas.", c:"Feito após os 10 minutos."},
+  {id:"s_offline", cat:"mental", t:"Uma hora offline", xp:20, b:"Fique uma hora sem redes sociais, de preferência à tarde ou à noite.", w:"Menos comparação, menos ansiedade, mais tempo pra você.", c:"Feito após 60 minutos sem abrir redes."}
+];
+const MENU = {
+  cafe:{nome:"Café da manhã", itens:[
+    ["2 ovos mexidos, 1 fatia de pão integral e 1 fruta","clássico, 10 min"],
+    ["Tapioca pequena com ovo e queijo branco","sustenta bem a manhã de aula"],
+    ["Iogurte natural com 1 colher de aveia e fruta picada","rápido, bom se estiver sem fome"],
+    ["Crepioca: 1 ovo + 2 colheres de goma, recheio de frango desfiado","alta proteína"]]},
+  lanche:{nome:"Lanches", itens:[
+    ["Fruta + um punhado pequeno de castanhas","leva fácil na mochila"],
+    ["Sanduíche pequeno de pão integral com frango desfiado","pra levar na faculdade"],
+    ["Iogurte natural com aveia",""],
+    ["Fatia de queijo branco com fruta",""],
+    ["Copo de leite com café + 1 fruta",""]]},
+  almoco:{nome:"Almoço", itens:[
+    ["Frango grelhado, 3–4 colheres de arroz, 1 concha pequena de feijão e salada","metade do prato com salada"],
+    ["Carne magra, legumes refogados e 1 batata pequena",""],
+    ["Peixe, arroz, feijão e legumes",""],
+    ["Omelete de 2 ovos com legumes, feijão e salada","bom quando não tem carne pronta"]]},
+  jantar:{nome:"Jantar", itens:[
+    ["Omelete com legumes","leve, 10 min"],
+    ["Sopa de legumes com frango desfiado","ótima se estiver com enjoo"],
+    ["Peixe ou frango com legumes e 1 mandioca pequena",""],
+    ["Crepioca com frango e salada",""]]}
+};
+const FALLBACK_RECIPES = [
+  {nome:"Frango desfiado com legumes", tempo:"30 min", porcoes:"3", ingredientes:["500 g de peito de frango","1 cebola","2 dentes de alho","1 tomate","1 cenoura ralada","1 abobrinha em cubos","Sal, pimenta e cheiro-verde"], passos:["Cozinhe o frango em água com sal por 20 min e desfie.","Refogue cebola e alho com um fio de azeite.","Junte tomate, cenoura e abobrinha e cozinhe 5 min.","Misture o frango, ajuste o sal e finalize com cheiro-verde."], dica:"Rende marmitas para 2 dias e serve de recheio pra crepioca."},
+  {nome:"Omelete de forno com legumes", tempo:"25 min", porcoes:"2", ingredientes:["4 ovos","1 tomate picado","½ cebola picada","1 xícara de espinafre ou brócolis picado","2 colheres de queijo branco","Sal e orégano"], passos:["Bata os ovos com sal.","Misture os legumes e o queijo.","Coloque numa forma untada.","Asse a 200 °C por 15 a 20 min."], dica:"Dá pra cortar em pedaços e levar pra faculdade."},
+  {nome:"Sopa de legumes com frango", tempo:"35 min", porcoes:"4", ingredientes:["300 g de frango em cubos","1 cenoura","1 chuchu","1 batata pequena","1 cebola e 2 dentes de alho","Cheiro-verde","Sal"], passos:["Refogue cebola e alho.","Doure o frango.","Junte os legumes em cubos e cubra com água.","Cozinhe 20 min e finalize com cheiro-verde."], dica:"Leve e fácil de comer nos dias de enjoo."},
+  {nome:"Peixe assado com batata e brócolis", tempo:"30 min", porcoes:"2", ingredientes:["2 filés de tilápia","1 batata em rodelas finas","1 xícara de brócolis","Suco de ½ limão","Alho, sal e páprica"], passos:["Tempere o peixe com limão, alho, sal e páprica.","Forre a assadeira com a batata.","Coloque o peixe e o brócolis por cima.","Asse a 200 °C por 20 a 25 min."], dica:"Pouca louça e muita proteína."},
+  {nome:"Salada de grão-de-bico com atum", tempo:"10 min", porcoes:"2", ingredientes:["1 lata de grão-de-bico escorrido","1 lata de atum em água","1 tomate","½ pepino","¼ de cebola roxa","Limão, sal e salsinha"], passos:["Pique tomate, pepino e cebola.","Misture tudo com o grão-de-bico e o atum.","Tempere com limão, sal e salsinha."], dica:"Não vai ao fogo. Ideal pro almoço pós-aula."},
+  {nome:"Crepioca de frango", tempo:"10 min", porcoes:"1", ingredientes:["1 ovo","2 colheres de goma de tapioca","3 colheres de frango desfiado","1 colher de queijo branco","Sal"], passos:["Bata o ovo com a goma e o sal.","Despeje numa frigideira antiaderente.","Vire quando firmar, recheie com frango e queijo.","Dobre e sirva."], dica:"Café ou jantar rápido."}
+];
+const FAIL_TYPES = ["Comi fora do plano","Bebi refri ou comi doce","Pulei a caminhada","Fiquei sem beber água","Dormi tarde","Fiquei no celular até tarde"];
+const WALK_PLAN = [30,38,40,45,50];
+const XP_WATER = 5, XP_WATER_BONUS = 20, XP_JOURNAL = 25, XP_WALK = 30, XP_LEVEL = 200, XP_RECIPE = 50;
+const PEN_FAIL = 40, PEN_ABSENT = 60, PEN_MANUAL = 15;
+const DEFAULT_CFG = () => ({water:6, streakMin:6, deadlines:{}, removed:[], custom:[], aula:{dias:[1,2,3,4], ini:8, fim:11+40/60}, walkMin:null});
+
+/* ================== utilidades ================== */
+const pad = n => String(n).padStart(2,"0");
+const keyOf = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parseKey = k => { const [y,m,d] = k.split("-").map(Number); return new Date(y,m-1,d); };
+const todayKey = () => keyOf(new Date());
+function weekKey(d){ const x = new Date(d); x.setDate(x.getDate()-((x.getDay()+6)%7)); return keyOf(x); }
+const nowH = () => { const n = new Date(); return n.getHours() + n.getMinutes()/60; };
+const hhmm = h => pad(Math.floor(h))+":"+pad(Math.round((h%1)*60));
+const L = n => n.toLocaleString("pt-BR",{maximumFractionDigits:1});
+function hash(s){ let h = 2166136261; for (const c of s){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const DIAS = ["dom","seg","ter","qua","qui","sex","sáb"];
+
+let state = { start: todayKey(), days:{}, weeks:{}, weights:[], why:"", chat:[], cfg:DEFAULT_CFG() };
+let store = null, sample = null;
+
+const cfg = () => state.cfg;
+function day(k=todayKey()){
+  const d = state.days[k] ||= {q:{}, water:0, walk:0};
+  d.j ||= ["","",""]; d.side ||= {}; d.fails ||= []; d.meals ||= {}; d.sleep ||= {a:"",b:""};
+  d.use ||= {cig:0, bas:0, alc:{}}; d.use.alc ||= {};
+  return d;
+}
+function week(k=weekKey(new Date())){ return state.weeks[k] ||= {q:{}}; }
+const isClassDay = (k=todayKey()) => cfg().aula && cfg().aula.dias.includes(parseKey(k).getDay());
+function missions(k=todayKey()){
+  const wd = parseKey(k).getDay();
+  const b = BUILTIN.filter(q => !cfg().removed.includes(q.id));
+  const c = cfg().custom.filter(q => !q.dias || !q.dias.length || q.dias.includes(wd));
+  return [...b, ...c];
+}
+function deadline(q, k=todayKey()){
+  if (cfg().deadlines[q.id] != null) return cfg().deadlines[q.id];
+  if (isClassDay(k) && q.aulaAte != null) return q.aulaAte;
+  return q.ate ?? 24;
+}
+const isLate = q => { const a = deadline(q); return a < 24 && nowH() >= a; };
+const streakMin = () => Math.max(3, Math.min(cfg().streakMin, missions().length + 3));
+const waterGoal = () => cfg().water;
+const walkTarget = () => cfg().walkMin || WALK_PLAN[Math.min(weekNumber()-1, WALK_PLAN.length-1)];
+const weekNumber = () => Math.floor((parseKey(todayKey()) - parseKey(state.start))/(7*86400000)) + 1;
+const walkDone = d => (d.walk||0) >= 20 || (d.km||0) >= 1.5;
+const journalDone = d => d.j && d.j.every(s => s.trim());
+function sideToday(){
+  const k = todayKey(), aula = isClassDay(k);
+  const pool = SIDE.filter(s => aula || !s.aula);
+  const d = day(), picks = [];
+  let seed = hash(k + (d.reroll ? ":r" : ""));
+  const kept = d.keep || [];
+  for (const id of kept){ const s = SIDE.find(x => x.id === id); if (s) picks.push(s); }
+  const cats = ["confiança","social","mental"];
+  for (const cat of cats){
+    if (picks.some(p => p.cat === cat)) continue;
+    const opts = pool.filter(s => s.cat === cat && !picks.includes(s) && s.id !== d.rerolled);
+    if (opts.length){ picks.push(opts[seed % opts.length]); seed = Math.imul(seed, 31) >>> 0; }
+  }
+  return picks.slice(0,3);
+}
+
+/* ================== XP ================== */
+function allMissionXP(id){ const q = [...BUILTIN, ...cfg().custom].find(x => x.id === id); return q ? q.xp : 0; }
+function dayXP(d){
+  let xp = 0;
+  for (const id in d.q) if (d.q[id]) xp += allMissionXP(id);
+  xp += Math.min(d.water, waterGoal())*XP_WATER + (d.water >= waterGoal() ? XP_WATER_BONUS : 0);
+  if (walkDone(d)) xp += XP_WALK;
+  if (journalDone(d)) xp += XP_JOURNAL;
+  for (const id in (d.side||{})) if (d.side[id]){ const s = SIDE.find(x => x.id === id); if (s) xp += s.xp; }
+  if (d.recipeDone) xp += XP_RECIPE;
+  xp -= (d.fails||[]).length * PEN_MANUAL;
+  return xp;
+}
+function dayScore(d, k){
+  if (!d) return 0;
+  const ms = missions(k || todayKey());
+  let n = ms.filter(q => d.q[q.id]).length;
+  if (d.water >= waterGoal()) n++;
+  if (walkDone(d)) n++;
+  if (journalDone(d)) n++;
+  return n;
+}
+function pastDays(){ const out = [], d = parseKey(state.start), t = parseKey(todayKey()); while (d < t){ out.push(keyOf(d)); d.setDate(d.getDate()+1); } return out; }
+function penalties(){
+  let p = 0, fails = 0;
+  for (const k of pastDays()){ const s = dayScore(state.days[k], k); if (s === 0){ p += PEN_ABSENT; fails++; } else if (s < streakMin()){ p += PEN_FAIL; fails++; } }
+  let manual = 0; for (const k in state.days) manual += (state.days[k].fails||[]).length;
+  return {p, fails, manual};
+}
+function totalXP(){
+  let xp = 0;
+  for (const k in state.days) xp += dayXP(day(k));
+  for (const k in state.weeks) for (const q of WEEKLY) if (state.weeks[k].q[q.id]) xp += q.xp;
+  return Math.max(0, xp - penalties().p);
+}
+function streak(){
+  let n = 0; const d = new Date();
+  if (dayScore(state.days[keyOf(d)], keyOf(d)) < streakMin()) d.setDate(d.getDate()-1);
+  while (dayScore(state.days[keyOf(d)], keyOf(d)) >= streakMin()){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function bestStreak(){
+  let best = 0, cur = 0;
+  for (const k of [...pastDays(), todayKey()]){ if (dayScore(state.days[k], k) >= streakMin()){ cur++; best = Math.max(best,cur); } else if (k !== todayKey()) cur = 0; }
+  return best;
+}
+function waterExpected(){
+  const h = nowH(), g = waterGoal(); if (h <= 8) return 0; if (h >= 21) return g; return Math.floor((h-8)/13*g);
+}
+/* ================== render ================== */
+const $ = id => document.getElementById(id);
+let lastLevel = null;
+function renderHeader(){
+  const xp = totalXP(), lvl = Math.floor(xp/XP_LEVEL)+1, into = xp % XP_LEVEL;
+  $("lvl").textContent = lvl;
+  const cells = 24, fill = Math.round(into/XP_LEVEL*cells);
+  $("xpbar").textContent = "[" + "█".repeat(fill) + "░".repeat(cells-fill) + "] " + Math.round(into/XP_LEVEL*100) + "%";
+  const dx = dayXP(day());
+  $("xptext").textContent = into+"/"+XP_LEVEL+" XP · hoje "+(dx >= 0 ? "+" : "")+dx;
+  const pen = penalties(), nf = pen.fails + pen.manual;
+  $("pen").textContent = nf ? nf+" falha(s) registradas" : "0 falhas";
+  $("pen").className = nf ? "neg" : "";
+  $("streak").textContent = streak();
+  if (lastLevel !== null && lvl > lastLevel) toast("NÍVEL "+lvl+" DESBLOQUEADO");
+  if (lastLevel !== null && lvl < lastLevel) toast("Você caiu pro nível "+lvl, true);
+  lastLevel = lvl;
+  const w = $("week7"); w.innerHTML = "";
+  for (let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i); const k = keyOf(d);
+    const s = dayScore(state.days[k], k), el = document.createElement("span");
+    el.textContent = DIAS[d.getDay()];
+    if (s >= streakMin()) el.className = "full";
+    else if (i === 0) el.className = s >= 3 ? "half" : "";
+    else if (k >= state.start) el.className = "fail";
+    if (i===0) el.classList.add("today");
+    el.title = s+" missões"; w.appendChild(el);
+  }
+}
+function renderConsole(){
+  const d = day(), lines = [], h = nowH(), a = cfg().aula;
+  if (isClassDay()){
+    if (h < a.ini) lines.push(["w","[AULA "+hhmm(a.ini)+"–"+hhmm(a.fim)+"] leve 1 garrafa de água e um lanche com proteína na mochila."]);
+    else if (h < a.fim) lines.push(["ok","[EM AULA] foco total. Água no intervalo. Missão social disponível na turma."]);
+  }
+  const late = missions().filter(q => !d.q[q.id] && isLate(q));
+  if (late.length) lines.push(["a","[ATRASADO] "+late.map(q => q.t.toLowerCase()).join(", ")]);
+  const exp = waterExpected();
+  if (d.water < exp) lines.push(["a","[ÁGUA] "+L(d.water*0.5)+" L registrados. Pelo horário, devia estar em "+L(exp*0.5)+" L."]);
+  if (h >= 18 && !walkDone(d)) lines.push(["w","[CAMINHADA] não registrada. Meta de hoje: "+walkTarget()+" min."]);
+  if (h >= 20 && !journalDone(d)) lines.push(["w","[DIÁRIO] pendente. Feche o dia antes de dormir."]);
+  const s = dayScore(d), m = streakMin();
+  if (s >= m) lines.push(["ok","[OK] dia garantido: "+s+" missões. Sequência protegida."]);
+  else lines.push([h >= 18 ? "a" : "w","[STATUS] "+s+"/"+m+" missões. Faltam "+(m-s)+" pra não falhar o dia."]);
+  const y = new Date(); y.setDate(y.getDate()-1); const yk = keyOf(y);
+  if (yk >= state.start && dayScore(state.days[yk], yk) < m) lines.unshift(["a","[FALHA] ontem não fechou. −"+(dayScore(state.days[yk], yk) ? PEN_FAIL : PEN_ABSENT)+" XP. Hoje é o dia de virar."]);
+  const c = $("console"); c.innerHTML = "";
+  for (const [cls,txt] of lines){ const el = document.createElement("div"); el.className = cls; el.textContent = txt; c.appendChild(el); }
+  const fl = $("failList"); fl.innerHTML = "";
+  for (const f of d.fails){ const li = document.createElement("li"); li.textContent = "−"+PEN_MANUAL+" XP · "+f.t+" ("+new Date(f.at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})+")"; fl.appendChild(li); }
+}
+function renderBrief(){
+  const k = todayKey(), d = day(), aula = isClassDay(k), a = cfg().aula, dt = new Date();
+  const side = sideToday();
+  const lines = [
+    ["Tipo de dia", aula ? "dia de aula, "+hhmm(a.ini)+" às "+hhmm(a.fim)+". Prazos da manhã antecipados." : "dia livre. Use pra caminhada mais longa e preparar comida."],
+    ["Objetivo principal", "fechar "+streakMin()+" missões e bater "+L(waterGoal()*0.5)+" L de água."],
+    ["Caminhada", walkTarget()+" min"+(aula ? ", melhor à tarde depois do almoço." : ".")],
+    ["Secundárias", side.map(s => s.t).join(" · ")],
+    ["Bônus especial", d.recipeDone ? "receita do sistema concluída." : "faça a receita do sistema (aba Cardápio) e ganhe +"+XP_RECIPE+" XP."]
+  ];
+  const b = $("brief"); b.innerHTML = '<div class="hd"></div>';
+  b.firstChild.textContent = "BRIEFING // "+dt.toLocaleDateString("pt-BR",{weekday:"long", day:"numeric", month:"long"});
+  for (const [kk,v] of lines){ const p = document.createElement("p"); p.innerHTML = '<span class="k"></span> '; p.firstChild.textContent = kk+":"; p.append(v); b.appendChild(p); }
+}
+function questBtn(q, done, late, onToggle, extra){
+  const b = document.createElement("button");
+  b.className = "quest"+(done?" done":"")+(late && !done ? " late":""); b.setAttribute("aria-pressed", done);
+  b.innerHTML = '<span class="box"></span><span class="txt"><span class="t"></span><span class="d"></span></span><span class="xp"></span>';
+  b.querySelector(".box").textContent = done ? "[x]" : "[ ]";
+  b.querySelector(".t").textContent = q.t; b.querySelector(".d").textContent = q.d || "";
+  b.querySelector(".xp").textContent = (late && !done) ? "atrasada" : "+"+q.xp+" XP" + (extra && !done ? "\n"+extra : "");
+  b.querySelector(".xp").style.whiteSpace = "pre";
+  b.onclick = onToggle; return b;
+}
+function renderDaily(){
+  const d = day(), box = $("daily"); box.innerHTML = "";
+  $("mainSub").textContent = "Em vermelho: passou do prazo. Dia com menos de "+streakMin()+" missões vira falha e custa "+PEN_FAIL+" XP."+(isClassDay() ? " Hoje é dia de aula: prazos da manhã antecipados." : "");
+  for (const q of missions()){
+    const a = deadline(q);
+    box.appendChild(questBtn(q, !!d.q[q.id], isLate(q), () => { d.q[q.id] = !d.q[q.id]; if (d.q[q.id]) toast("+"+q.xp+" XP"); changed(); }, a < 24 ? "até "+hhmm(a) : ""));
+  }
+  const wb = $("water"); wb.innerHTML = "";
+  const max = Math.max(8, waterGoal());
+  for (let i=0;i<max;i++){
+    const b = document.createElement("button");
+    b.className = "drop"+(i < d.water ? " on":""); b.textContent = L((i+1)*0.5);
+    b.setAttribute("aria-label", L((i+1)*0.5)+" litros");
+    b.onclick = () => { const before = d.water; d.water = (d.water === i+1) ? i : i+1;
+      if (before < waterGoal() && d.water >= waterGoal()) toast("META DE ÁGUA: +"+XP_WATER_BONUS+" XP"); changed(); };
+    wb.appendChild(b);
+  }
+  $("waterSub").textContent = "Uma marca por garrafa de 500 ml. Meta: "+L(waterGoal()*0.5)+" L. O sistema cobra se você estiver atrás do ritmo.";
+  $("waterL").textContent = (d.water*0.5).toLocaleString("pt-BR",{minimumFractionDigits:1})+" L";
+  // secundárias
+  const sb = $("side"); sb.innerHTML = "";
+  for (const s of sideToday()){
+    const det = document.createElement("details"); det.className = "side"+(d.side[s.id] ? " done" : "");
+    det.innerHTML = '<summary><span class="box"></span><span class="txt" style="flex:1"><span class="t"></span></span><span class="tag"></span></summary><div class="body"><p><b>Missão:</b> <span class="m1"></span></p><p><b>Por quê:</b> <span class="m2"></span></p><p><b>Critério:</b> <span class="m3"></span></p><button class="btn"></button></div>';
+    det.querySelector(".box").textContent = d.side[s.id] ? "[x]" : "[ ]";
+    det.querySelector(".t").textContent = s.t;
+    det.querySelector(".tag").textContent = s.cat+" · +"+s.xp;
+    det.querySelector(".m1").textContent = s.b; det.querySelector(".m2").textContent = s.w; det.querySelector(".m3").textContent = s.c;
+    const btn = det.querySelector(".btn"); btn.textContent = d.side[s.id] ? "Desmarcar" : "Missão cumprida";
+    btn.onclick = () => { d.side[s.id] = !d.side[s.id]; if (d.side[s.id]) toast("SECUNDÁRIA: +"+s.xp+" XP"); changed(); };
+    if (openSide.has(s.id)) det.open = true;
+    det.addEventListener("toggle", () => det.open ? openSide.add(s.id) : openSide.delete(s.id));
+    sb.appendChild(det);
+  }
+  $("reroll").disabled = !!d.reroll;
+  // sono
+  if (document.activeElement !== $("sleepA")) $("sleepA").value = d.sleep.a || "";
+  if (document.activeElement !== $("sleepB")) $("sleepB").value = d.sleep.b || "";
+  const sh = sleepHours(d);
+  $("sleepCalc").textContent = sh == null ? "" : "> "+L(sh)+" h de sono "+(sh >= 7 && sh <= 9 ? "[OK]" : sh < 7 ? "[ABAIXO DO MÍNIMO]" : "[ACIMA DE 9 H]");
+  $("sleepCalc").style.color = sh != null && (sh < 7 || sh > 9) ? "var(--alert)" : "";
+  // caminhada
+  $("walkTarget").textContent = "Semana "+weekNumber()+": "+walkTarget()+" min. Conta como missão a partir de 20 min ou 1,5 km (+"+XP_WALK+" XP).";
+  for (const [id,f] of [["walkMin","walk"],["walkKm","km"],["walkSteps","steps"]]) if (document.activeElement !== $(id)) $(id).value = d[f] || "";
+  const km = d.km || (d.steps ? d.steps*0.75/1000 : 0);
+  const parts = [];
+  if (km) parts.push(L(km)+" km"+(!d.km && d.steps ? " (estimado pelos passos)" : ""));
+  if (d.walk && km) parts.push("ritmo de "+L(km/(d.walk/60))+" km/h");
+  if (d.walk) parts.push(Math.min(100, Math.round(d.walk/walkTarget()*100))+"% da meta de tempo");
+  $("walkCalc").textContent = parts.length ? "> "+parts.join(" · ") : "";
+  ["j1","j2","j3"].forEach((id,i) => { if (document.activeElement !== $(id)) $(id).value = d.j[i] || ""; });
+}
+const openSide = new Set();
+function sleepHours(d){
+  if (!d.sleep.a || !d.sleep.b) return null;
+  const [ah,am] = d.sleep.a.split(":").map(Number), [bh,bm] = d.sleep.b.split(":").map(Number);
+  let h = (bh + bm/60) - (ah + am/60); if (h <= 0) h += 24; return Math.round(h*10)/10;
+}
+let mealCat = "cafe";
+function renderMenu(){
+  const d = day();
+  const tabs = $("mealTabs"); tabs.innerHTML = "";
+  for (const k in MENU){ const b = document.createElement("button"); b.textContent = MENU[k].nome; b.setAttribute("aria-pressed", k === mealCat); b.onclick = () => { mealCat = k; renderMenu(); }; tabs.appendChild(b); }
+  const box = $("meals"); box.innerHTML = "";
+  if (isClassDay() && (mealCat === "cafe" || mealCat === "lanche")) { const p = document.createElement("p"); p.className = "sub"; p.textContent = "Dia de aula: tome o café antes das "+hhmm(cfg().aula.ini - .25)+" e leve um lanche na mochila."; box.appendChild(p); }
+  MENU[mealCat].itens.forEach(([t,small], i) => {
+    const id = mealCat+":"+i, eaten = (d.meals[mealCat]||[]).includes(i);
+    const el = document.createElement("div"); el.className = "meal"+(eaten ? " eaten" : "");
+    el.innerHTML = '<span class="t"></span><button></button>';
+    el.querySelector(".t").textContent = t;
+    if (small){ const sm = document.createElement("small"); sm.textContent = small; el.querySelector(".t").appendChild(sm); }
+    const b = el.querySelector("button"); b.textContent = eaten ? "comi ✓" : "comi";
+    b.onclick = () => {
+      const arr = d.meals[mealCat] ||= [];
+      if (eaten) arr.splice(arr.indexOf(i),1); else arr.push(i);
+      if (!eaten && mealCat === "cafe" && !d.q.cafe){ d.q.cafe = true; toast("Café com proteína: +15 XP"); }
+      if (!eaten && (d.meals.almoco||[]).length && (d.meals.jantar||[]).length && !d.q.proteina){ d.q.proteina = true; toast("Proteína no almoço e jantar: +15 XP"); }
+      changed();
+    };
+    box.appendChild(el);
+  });
+  renderRecipe();
+}
+function renderRecipe(){
+  const d = day(), r = (state.recipes||{})[todayKey()], box = $("recipe"); box.innerHTML = "";
+  if (!r){ const p = document.createElement("p"); p.className = "sub"; p.textContent = "Nenhuma receita gerada hoje. Toque em Gerar."; box.appendChild(p); return; }
+  const el = document.createElement("div"); el.className = "recipe"+(d.recipeDone ? " done" : "");
+  el.innerHTML = '<h3></h3><div class="meta"></div><ul></ul><ol></ol><p class="sub" style="margin:6px 0"></p><button class="btn"></button>';
+  el.querySelector("h3").textContent = r.nome;
+  el.querySelector(".meta").textContent = [r.tempo, r.porcoes ? r.porcoes+" porção(ões)" : ""].filter(Boolean).join(" · ");
+  for (const i of r.ingredientes||[]){ const li = document.createElement("li"); li.textContent = i; el.querySelector("ul").appendChild(li); }
+  for (const s of r.passos||[]){ const li = document.createElement("li"); li.textContent = s; el.querySelector("ol").appendChild(li); }
+  el.querySelector("p").textContent = r.dica || "";
+  const b = el.querySelector("button"); b.textContent = d.recipeDone ? "Feita ✓ (+"+XP_RECIPE+" XP)" : "Fiz a receita (+"+XP_RECIPE+" XP)";
+  b.onclick = () => { d.recipeDone = !d.recipeDone; if (d.recipeDone) toast("BÔNUS ESPECIAL: +"+XP_RECIPE+" XP"); changed(); };
+  box.appendChild(el);
+}
+async function genRecipe(){
+  const have = $("recipeHave").value.trim(); const btn = $("recipeGen");
+  state.recipes ||= {};
+  const d = day();
+  if (d.recipeDone){ toast("Bônus de hoje já garantido."); return; }
+  btn.disabled = true; btn.textContent = "…";
+  let r = null;
+  if (sample){
+    try {
+      r = await sample.json([{role:"user", content:
+`Crie UMA receita brasileira simples para uma pessoa em reeducação alimentar que usa tirzepatida (pode ter enjoo e pouca fome).
+Regras: rica em proteína, com legumes ou verduras, leve (nada frito ou muito gorduroso, sem açúcar), ingredientes baratos de mercado comum, no máximo 8 ingredientes e 6 passos, até 40 minutos. Não informe calorias. Em português do Brasil.
+${have ? "Priorize estes ingredientes que a pessoa tem: "+have+". Se algum for inadequado (fritura, doce), ignore-o." : ""}
+Evite repetir: ${Object.values(state.recipes).slice(-5).map(x => x.nome).join(", ") || "nada"}.
+Responda só com JSON: {"nome":"","tempo":"","porcoes":"","ingredientes":[""],"passos":[""],"dica":"uma frase"}`}], {cache:false, modelTier:"quick"});
+      if (!r || !r.nome || !Array.isArray(r.passos)) r = null;
+    } catch(e){ r = null; }
+  }
+  if (!r){ const used = new Set(Object.values(state.recipes).map(x => x.nome)); r = FALLBACK_RECIPES.find(x => !used.has(x.nome)) || FALLBACK_RECIPES[hash(todayKey()) % FALLBACK_RECIPES.length]; }
+  state.recipes[todayKey()] = {nome:String(r.nome), tempo:String(r.tempo||""), porcoes:String(r.porcoes||""), ingredientes:(r.ingredientes||[]).slice(0,12).map(String), passos:(r.passos||[]).slice(0,8).map(String), dica:String(r.dica||"")};
+  btn.disabled = false; btn.textContent = "Gerar";
+  changed();
+}
+function renderWeekly(){
+  const wk = week(), box = $("weekly"); box.innerHTML = "";
+  const start = parseKey(weekKey(new Date())), end = new Date(start); end.setDate(end.getDate()+6);
+  $("weekLabel").textContent = start.toLocaleDateString("pt-BR",{day:"numeric",month:"short"})+" a "+end.toLocaleDateString("pt-BR",{day:"numeric",month:"short"});
+  for (const q of WEEKLY) box.appendChild(questBtn(q, !!wk.q[q.id], false, () => { wk.q[q.id] = !wk.q[q.id]; if (wk.q[q.id]) toast("+"+q.xp+" XP"); changed(); }));
+  const log = $("weightLog"); log.innerHTML = "";
+  const ws = [...state.weights].sort((a,b) => b.date.localeCompare(a.date)).slice(0,10);
+  ws.forEach((w,i) => {
+    const li = document.createElement("li"), prev = ws[i+1], diff = prev ? w.kg - prev.kg : null;
+    li.innerHTML = "<span></span><span></span>";
+    li.firstChild.textContent = parseKey(w.date).toLocaleDateString("pt-BR",{day:"numeric",month:"short"});
+    li.lastChild.textContent = w.kg.toLocaleString("pt-BR",{minimumFractionDigits:1})+" kg"+(diff!==null ? " ("+(diff>0?"+":"")+L(diff)+")" : "");
+    log.appendChild(li);
+  });
+}
+let prevBadges = null;
+function renderBadges(){
+  const days = Object.values(state.days), c = f => days.filter(f).length, best = bestStreak(), lvl = Math.floor(totalXP()/XP_LEVEL)+1;
+  const sideN = days.reduce((n,d) => n + Object.values(d.side||{}).filter(Boolean).length, 0);
+  const recN = c(d => d.recipeDone), preps = Object.values(state.weeks).filter(w => w.q.prep).length;
+  const list = [
+    ["Iniciou o protocolo","primeira missão", c(d => dayScore(d) > 0) > 0, ""],
+    ["Hidratado","água completa 7 dias", c(d => d.water >= waterGoal()) >= 7, c(d => d.water >= waterGoal())+"/7"],
+    ["Pé na estrada","caminhar 10 dias", c(walkDone) >= 10, c(walkDone)+"/10"],
+    ["Sequência 3","3 dias seguidos", best >= 3, best+"/3"],
+    ["Semana limpa","7 dias seguidos", best >= 7, best+"/7"],
+    ["Hábito formado","21 dias seguidos", best >= 21, best+"/21"],
+    ["Cabeça no lugar","7 diários completos", c(journalDone) >= 7, c(journalDone)+"/7"],
+    ["Sistema limpo","14 dias sem refri, doce, fritura", c(d => d.q.limpo) >= 14, c(d => d.q.limpo)+"/14"],
+    ["Chef do sistema","5 receitas do sistema", recN >= 5, recN+"/5"],
+    ["Evolução","15 missões secundárias", sideN >= 15, sideN+"/15"],
+    ["Marmiteiro","comida pronta 4 semanas", preps >= 4, preps+"/4"],
+    ["Nível 5","chegar ao nível 5", lvl >= 5, "nível "+lvl]
+  ];
+  const got = list.filter(b => b[2]).map(b => b[0]);
+  if (prevBadges) got.filter(n => !prevBadges.includes(n)).forEach(n => toast("CONQUISTA: "+n));
+  prevBadges = got;
+  const box = $("badges"); box.innerHTML = "";
+  for (const [name,desc,ok,prog] of list){
+    const el = document.createElement("div"); el.className = "badge"+(ok?" got":"");
+    el.innerHTML = "<b></b><span></span>";
+    el.querySelector("b").textContent = (ok ? "[✓] " : "[ ] ")+name;
+    el.querySelector("span").textContent = desc+(ok || !prog ? "" : " · "+prog);
+    box.appendChild(el);
+  }
+  if (document.activeElement !== $("why")) $("why").value = state.why || "";
+}
+const USE_ITEMS = [["cig","Cigarros"],["bas","Baseados"]];
+const ALC_ITEMS = [["cerveja","Cerveja (lata ou long neck)"],["chopp","Chopp (copo)"],["vinho","Vinho (taça)"],["destilado","Destilado (dose)"],["drink","Drink"]];
+const alcTotal = u => Object.values((u && u.alc) || {}).reduce((a,b) => a + (b||0), 0);
+function counterRow(label, value, onChange){
+  const r = document.createElement("div"); r.className = "ctr";
+  r.innerHTML = '<span class="lb"></span><button aria-label="Diminuir">−</button><span class="n"></span><button aria-label="Aumentar">+</button>';
+  r.querySelector(".lb").textContent = label; r.querySelector(".n").textContent = value;
+  const [minus, plus] = r.querySelectorAll("button");
+  minus.disabled = value <= 0;
+  minus.onclick = () => onChange(Math.max(0, value-1));
+  plus.onclick = () => onChange(Math.min(99, value+1));
+  return r;
+}
+function renderUse(){
+  const d = day(), u = d.use;
+  const uc = $("useCounters"); uc.innerHTML = "";
+  for (const [k,lb] of USE_ITEMS) uc.appendChild(counterRow(lb, u[k]||0, v => { u[k] = v; changed(); }));
+  const ac = $("alcCounters"); ac.innerHTML = "";
+  for (const [k,lb] of ALC_ITEMS) ac.appendChild(counterRow(lb, u.alc[k]||0, v => { u.alc[k] = v; changed(); }));
+  $("useTotal").textContent = "> hoje: "+(u.cig||0)+" cigarro(s) · "+(u.bas||0)+" baseado(s) · "+alcTotal(u)+" bebida(s)";
+  const t = $("useTable"); t.innerHTML = "<tr><th>Dia</th><th>Cigarros</th><th>Baseados</th><th>Bebidas</th></tr>";
+  let sc = 0, sb = 0, sa = 0;
+  for (let i=0;i<7;i++){
+    const dt = new Date(); dt.setDate(dt.getDate()-i); const k = keyOf(dt);
+    const x = state.days[k] && state.days[k].use; const c = x ? x.cig||0 : 0, b = x ? x.bas||0 : 0, a = alcTotal(x);
+    sc += c; sb += b; sa += a;
+    const tr = document.createElement("tr");
+    for (const v of [i === 0 ? "hoje" : DIAS[dt.getDay()]+" "+dt.getDate(), x ? c : "–", x ? b : "–", x ? a : "–"]){ const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); }
+    t.appendChild(tr);
+  }
+  const tr = document.createElement("tr"); tr.className = "tot";
+  for (const v of ["7 dias", sc, sb, sa]){ const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); }
+  t.appendChild(tr);
+}
+/* ================== trilha sonora ================== */
+const MOODS = [["caminhada","Caminhada"],["foco","Foco / estudo"],["motivacao","Motivação"],["relaxar","Relaxar"],["surpresa","Me surpreenda"]];
+const FALLBACK_ALBUMS = {
+  caminhada:[["Discovery","Daft Punk",2001,"Batida constante e animada, segura o ritmo do passo."],["Hybrid Theory","Linkin Park",2000,"Energia alta do começo ao fim, boa pra acelerar nos tiros."],["A Tábua de Esmeralda","Jorge Ben",1974,"Groove leve que deixa a caminhada mais gostosa."]],
+  foco:[["Modal Soul","Nujabes",2005,"Hip-hop instrumental calmo, bom pra estudar e programar."],["Music Has the Right to Children","Boards of Canada",1998,"Eletrônica ambiente sem letra pra atrapalhar."],["Moon Safari","Air",1998,"Suave e envolvente, mantém a cabeça no código."]],
+  motivacao:[["AmarElo","Emicida",2019,"Sobre superação e autoestima, combina com mudança de vida."],["Sobrevivendo no Inferno","Racionais MC's",1997,"Peso e disciplina, clássico absoluto."],["The College Dropout","Kanye West",2004,"Fome de vencer em cada faixa."]],
+  relaxar:[["Racional Vol. 1","Tim Maia",1975,"Soul brasileiro pra desacelerar."],["Kind of Blue","Miles Davis",1959,"Jazz tranquilo, ótimo antes de dormir."],["Clube da Esquina","Milton Nascimento e Lô Borges",1972,"Calmo e bonito, bom pra fechar o dia."]]
+};
+function mstate(){ return state.music ||= {mood:"caminhada", svc:"spotify", taste:"", hist:[]}; }
+const spotifyUrl = a => "https://open.spotify.com/search/"+encodeURIComponent(a.album+" "+a.artista);
+const ytmUrl = a => "https://music.youtube.com/search?q="+encodeURIComponent(a.album+" "+a.artista);
+function renderMusic(){
+  const m = mstate();
+  const mb = $("musicMood"); mb.innerHTML = "";
+  for (const [k,lb] of MOODS){ const b = document.createElement("button"); b.textContent = lb; b.setAttribute("aria-pressed", m.mood === k); b.onclick = () => { m.mood = k; changed(); }; mb.appendChild(b); }
+  if (document.activeElement !== $("musicTaste")) $("musicTaste").value = m.taste || "";
+  const box = $("album"); box.innerHTML = "";
+  const a = m.hist[0];
+  if (a){
+    const el = document.createElement("div"); el.className = "album";
+    el.innerHTML = '<div class="an"></div><div class="ar"></div><div class="why"></div><div class="links"><a target="_blank" rel="noopener"></a></div>';
+    el.querySelector(".an").textContent = a.album;
+    el.querySelector(".ar").textContent = a.artista+(a.ano ? " · "+a.ano : "");
+    el.querySelector(".why").textContent = a.porque || "";
+    const l1 = el.querySelector("a");
+    l1.href = ytmUrl(a); l1.textContent = "▶ Ouvir no YouTube Music";
+    box.appendChild(el);
+  }
+  const h = $("musicHist"); h.innerHTML = "";
+  for (const x of m.hist.slice(1,8)){
+    const li = document.createElement("li"); li.innerHTML = '<span><a target="_blank" rel="noopener"></a></span><span></span>';
+    const ln = li.querySelector("a"); ln.textContent = x.album+" — "+x.artista; ln.href = ytmUrl(x);
+    li.lastChild.textContent = (MOODS.find(mm => mm[0] === x.mood)||["",""])[1];
+    h.appendChild(li);
+  }
+}
+async function genAlbum(){
+  const m = mstate(), btn = $("musicGen"); btn.disabled = true; btn.textContent = "Buscando…";
+  let r = null;
+  const mood = m.mood === "surpresa" ? "surpresa: algo fora do óbvio, mas que ele provavelmente vai curtir" : (MOODS.find(x => x[0] === m.mood)||["",""])[1];
+  if (sample){
+    try {
+      r = await sample.json([{role:"user", content:
+`Recomende UM álbum musical real e existente (não coletânea inventada) para um homem de 25 anos, estudante de Análise e Desenvolvimento de Sistemas, em processo de mudança de hábitos.
+Momento: ${mood}.
+Gosto declarado: ${m.taste || "não informado, varie entre brasileiro e internacional"}.
+Não repita estes: ${m.hist.slice(0,15).map(x => x.album+" - "+x.artista).join("; ") || "nenhum"}.
+Use o nome exato do álbum e do artista como aparecem nas plataformas de streaming.
+Responda só com JSON: {"album":"","artista":"","ano":0,"porque":"uma frase curta em português ligando o álbum ao momento"}`}], {cache:false, modelTier:"quick"});
+      if (!r || !r.album || !r.artista) r = null;
+    } catch(e){ r = null; }
+  }
+  if (!r){
+    const pool = m.mood === "surpresa" ? Object.values(FALLBACK_ALBUMS).flat() : FALLBACK_ALBUMS[m.mood];
+    const used = new Set(m.hist.map(x => x.album));
+    const pick = pool.find(x => !used.has(x[0])) || pool[(Math.random()*pool.length)|0];
+    r = {album:pick[0], artista:pick[1], ano:pick[2], porque:pick[3]};
+  }
+  m.hist.unshift({album:String(r.album).slice(0,120), artista:String(r.artista).slice(0,120), ano:parseInt(r.ano)||"", porque:String(r.porque||"").slice(0,200), mood:m.mood, at:Date.now()});
+  m.hist = m.hist.slice(0,30);
+  btn.disabled = false; btn.textContent = "Recomendar outro";
+  changed();
+}
+/* ================== assunto na manga ================== */
+const CHIT_TYPES = [["curiosidade","Curiosidade"],["starter","Puxar assunto"],["profunda","Pergunta pra aprofundar"]];
+const CHIT_WHERE = [["qualquer","Qualquer lugar"],["turma","Faculdade"],["role","Rolê com amigos"],["novo","Alguém que acabei de conhecer"]];
+const CHIT_FALLBACK = {
+  curiosidade:[["O primeiro “bug” de computador registrado foi uma mariposa de verdade presa num relé do computador Harvard Mark II, em 1947.","Qual foi o bug mais bizarro que você já teve num código?"],["Polvos têm três corações e sangue azul.","Se pudesse ter uma característica de algum animal, qual seria?"],["O mel não estraga: já acharam mel comestível em tumbas egípcias.","Qual comida você acha que aguentaria um apocalipse?"],["A Torre Eiffel fica uns 15 cm mais alta no verão por causa da dilatação do metal.","Você prefere calor ou frio?"]],
+  starter:[["“Qual foi a última coisa que você assistiu e recomendaria de olho fechado?”","Pergunte o porquê e conte a sua em troca."],["“Se você não estivesse fazendo o que faz hoje, o que estaria fazendo?”","Funciona bem com quem você está conhecendo."],["“Tem algum app ou site que você usa todo dia e ninguém conhece?”","Ótimo pra galera de tecnologia."],["“Qual o melhor lugar pra comer barato aqui perto?”","Simples, prático e quase todo mundo tem opinião."]],
+  profunda:[["“O que você faz que te faz perder a noção do tempo?”","Escute de verdade e pergunte como a pessoa começou."],["“Qual conselho você daria pra você de cinco anos atrás?”","Responda também, mostra abertura."],["“Tem alguma coisa que você mudou de opinião nos últimos anos?”","Boa pra conversa longa, sem pressa."]]
+};
+function chitState(){ return state.chit ||= {type:"curiosidade", where:"qualquer", hist:[]}; }
+function renderChit(){
+  const c = chitState();
+  for (const [id, list, key] of [["chitType", CHIT_TYPES, "type"],["chitWhere", CHIT_WHERE, "where"]]){
+    const box = $(id); box.innerHTML = "";
+    for (const [k,lb] of list){ const b = document.createElement("button"); b.textContent = lb; b.setAttribute("aria-pressed", c[key] === k); b.onclick = () => { c[key] = k; renderChit(); }; box.appendChild(b); }
+  }
+  const out = $("chitOut"); out.innerHTML = "";
+  const cur = c.hist[0];
+  if (cur){ const el = document.createElement("div"); el.className = "chat-card"; el.textContent = cur.texto; if (cur.gancho){ const h = document.createElement("span"); h.className = "hook"; h.textContent = "↳ "+cur.gancho; el.appendChild(h); } out.appendChild(el); }
+  $("chitCopy").hidden = !cur;
+}
+async function genChit(){
+  const c = chitState(), btn = $("chitGen"); btn.disabled = true; btn.textContent = "…";
+  let r = null;
+  const tipo = {curiosidade:"uma curiosidade verdadeira e surpreendente (fato real e verificável) que rende conversa", starter:"uma frase pronta e natural pra puxar papo, sem cantada e sem soar forçado", profunda:"uma pergunta aberta que aprofunda a conversa sem ser invasiva"}[c.type];
+  const onde = {qualquer:"qualquer situação", turma:"com colegas de faculdade de Análise e Desenvolvimento de Sistemas", role:"num rolê com amigos", novo:"com alguém que ele acabou de conhecer"}[c.where];
+  if (sample){
+    try {
+      r = await sample.json([{role:"user", content:
+`Gere ${tipo}, para usar ${onde}. Público: homem de 25 anos no Brasil. Português do Brasil, linguagem natural, no máximo 2 frases. Nada de política, religião, sexo ou temas pesados. Se for curiosidade, use só fatos que você tem certeza que são verdadeiros.
+Também dê um "gancho": uma pergunta ou dica curta pra continuar a conversa depois.
+Não repita: ${c.hist.slice(0,12).map(x => x.texto).join(" | ") || "nada"}.
+Responda só com JSON: {"texto":"","gancho":""}`}], {cache:false, modelTier:"quick"});
+      if (!r || !r.texto) r = null;
+    } catch(e){ r = null; }
+  }
+  if (!r){ const pool = CHIT_FALLBACK[c.type], used = new Set(c.hist.map(x => x.texto)); const p = pool.find(x => !used.has(x[0])) || pool[(Math.random()*pool.length)|0]; r = {texto:p[0], gancho:p[1]}; }
+  c.hist.unshift({texto:String(r.texto).slice(0,400), gancho:String(r.gancho||"").slice(0,200)}); c.hist = c.hist.slice(0,30);
+  btn.disabled = false; btn.textContent = "Outro";
+  renderChit(); clearTimeout(saveTimer); saveTimer = setTimeout(persist, 700);
+}
+
+/* ================== protocolo SOS ================== */
+const SOS_REASONS = {
+  larica:{lb:"Larica / vontade de beliscar", tip:"Escolha um destes e coma devagar, sentado:", list:() => MENU.lanche.itens.map(x => x[0]).slice(0,4)},
+  ansiedade:{lb:"Ansiedade", tip:"Pra baixar mais um pouco:", list:() => ["Caminhe 10 minutos, mesmo que só no quarteirão","Mande mensagem pra alguém de confiança","Escreva em uma linha o que está te preocupando"]},
+  tedio:{lb:"Tédio", tip:"Troque o tédio por uma ação de 10 minutos:", list:() => [...sideToday().filter(s => !day().side[s.id]).map(s => "Secundária: "+s.t), "Recomendar um álbum na trilha sonora"]},
+  estresse:{lb:"Estresse / cansaço", tip:"Recarregue sem culpa:", list:() => ["Tome um banho morno","10 minutos longe da tela","Deite e repita a respiração mais 3 vezes"]}
+};
+let sosTimer = null;
+function openSOS(){ $("sosOv").hidden = false; sosStep1(); }
+function sosStep1(){
+  $("sosStep").textContent = "1/3 · O que está pegando agora?";
+  const b = $("sosBody"); b.innerHTML = '<div class="chips"></div>';
+  for (const k in SOS_REASONS){ const bt = document.createElement("button"); bt.textContent = SOS_REASONS[k].lb; bt.onclick = () => sosStep2(k); b.firstChild.appendChild(bt); }
+}
+function sosStep2(reason){
+  $("sosStep").textContent = "2/3 · Respiração 4-4-6. Siga o círculo, 5 ciclos.";
+  const b = $("sosBody"); b.innerHTML = '<div class="breath" id="br"><div><b id="brT">pronto</b><small id="brC"></small></div></div><div class="actions" style="justify-content:center"><button class="btn ghost" id="brSkip">Pular</button></div>';
+  $("brSkip").onclick = () => sosStep3(reason, false);
+  let cycle = 0; const phases = [["inspire",4,true],["segure",4,true],["solte",6,false]];
+  const run = (pi, left) => {
+    if (pi >= phases.length){ cycle++; if (cycle >= 5) return sosStep3(reason, true); pi = 0; left = null; }
+    const [name, secs, big] = phases[pi]; left = left ?? secs;
+    const br = $("br"); if (!br) return;
+    br.style.transitionDuration = secs+"s"; br.classList.toggle("big", big);
+    $("brT").textContent = name+" "+left; $("brC").textContent = "ciclo "+(cycle+1)+"/5";
+    sosTimer = setTimeout(() => left > 1 ? run(pi, left-1) : run(pi+1, null), 1000);
+  };
+  sosTimer = setTimeout(() => run(0, null), 600);
+}
+function sosStep3(reason, completed){
+  clearTimeout(sosTimer);
+  $("sosStep").textContent = "3/3 · Próxima ação";
+  const d = day(), R = SOS_REASONS[reason];
+  let msg = "";
+  if (completed && missions().some(q => q.id === "respira") && !d.q.respira){ d.q.respira = true; msg = "Respiração concluída. Missão marcada: +10 XP."; changed(); }
+  else if (completed) msg = "Respiração concluída.";
+  const b = $("sosBody"); b.innerHTML = "";
+  if (msg){ const p = document.createElement("p"); p.className = "calc"; p.textContent = "> "+msg; b.appendChild(p); }
+  const w = document.createElement("div"); w.className = "sos-tip"; w.textContent = "Beba um copo de água agora. Muitas vezes a vontade diminui."; b.appendChild(w);
+  const t = document.createElement("div"); t.className = "sos-tip"; t.textContent = R.tip;
+  const ul = document.createElement("ul"); for (const x of R.list()){ const li = document.createElement("li"); li.textContent = x; ul.appendChild(li); } t.appendChild(ul); b.appendChild(t);
+  const a = document.createElement("div"); a.className = "actions"; a.innerHTML = '<button class="btn" data-close>Voltar ao sistema</button><button class="btn ghost">Repetir</button>';
+  a.lastChild.onclick = () => sosStep2(reason); b.appendChild(a);
+}
+function closeOv(ov){ ov.hidden = true; clearTimeout(sosTimer); }
+function render(){ renderHeader(); renderConsole(); renderBrief(); renderDaily(); renderUse(); renderMusic(); renderMenu(); renderWeekly(); renderBadges(); }
+let toastQ = [], toastBusy = false;
+function toast(msg, bad){ toastQ.push([msg,bad]); if (!toastBusy) nextToast(); }
+function nextToast(){
+  const n = toastQ.shift(); if (!n){ toastBusy = false; return; } toastBusy = true;
+  const t = $("toast"); t.textContent = n[0]; t.className = "toast show"+(n[1]?" bad":"");
+  setTimeout(() => { t.className = "toast"+(n[1]?" bad":""); setTimeout(nextToast, 250); }, 1700);
+}
+/* ================== falhas ================== */
+function addFail(t){
+  const d = day(); d.fails.push({t:String(t).slice(0,80), at:Date.now()});
+  toast("Falha registrada: −"+PEN_MANUAL+" XP", true); changed();
+}
+$("failBtn").onclick = () => { const box = $("failBox"); box.hidden = !box.hidden; $("failBtn").setAttribute("aria-expanded", !box.hidden); };
+for (const t of FAIL_TYPES){ const b = document.createElement("button"); b.textContent = t; b.onclick = () => addFail(t); $("failOpts").appendChild(b); }
+$("failOtherBtn").onclick = () => { const v = $("failOther").value.trim(); if (!v) return; addFail(v); $("failOther").value = ""; };
+
+/* ================== configuração ================== */
+function parseHour(v){
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return v;
+  const m = String(v).match(/^(\d{1,2})(?::|h)?(\d{2})?/); if (!m) return null;
+  return Number(m[1]) + (m[2] ? Number(m[2])/60 : 0);
+}
+function findMission(id){ return [...BUILTIN, ...cfg().custom].find(q => q.id === id || q.t.toLowerCase() === String(id).toLowerCase()); }
+function applyConfig(ops){
+  const done = [], c = cfg();
+  for (const op of (Array.isArray(ops) ? ops : []).slice(0,6)){
+    try {
+      if (op.op === "add_mission"){
+        if (c.custom.length >= 8){ done.push("limite de 8 missões personalizadas"); continue; }
+        const t = String(op.t||"").trim().slice(0,60); if (!t) continue;
+        const ate = parseHour(op.ate);
+        const q = {id:"c_"+Date.now().toString(36)+c.custom.length, t, d:String(op.d||"").slice(0,80), xp:Math.max(5,Math.min(40,parseInt(op.xp)||15)), ate: ate != null && ate >= 5 && ate <= 24 ? ate : 24,
+          dias: Array.isArray(op.dias) ? op.dias.map(Number).filter(n => n>=0 && n<=6) : []};
+        c.custom.push(q); done.push("missão criada: "+t+(q.dias.length ? " ("+q.dias.map(n=>DIAS[n]).join(", ")+")" : ""));
+      } else if (op.op === "remove_mission"){
+        const q = findMission(op.id); if (!q) continue;
+        if (missions().length <= 4){ done.push("mínimo de 4 missões principais, nada removido"); continue; }
+        if (q.id.startsWith("c_")) c.custom = c.custom.filter(x => x.id !== q.id); else if (!c.removed.includes(q.id)) c.removed.push(q.id);
+        done.push("missão removida: "+q.t);
+      } else if (op.op === "restore_mission"){
+        c.removed = c.removed.filter(x => x !== op.id); const q = findMission(op.id); if (q) done.push("missão restaurada: "+q.t);
+      } else if (op.op === "set_deadline"){
+        const q = findMission(op.id); if (!q) continue;
+        const a = parseHour(op.ate);
+        if (a == null){ delete c.deadlines[q.id]; done.push("prazo padrão: "+q.t); }
+        else if (a >= 5 && a <= 24){ c.deadlines[q.id] = a; done.push("prazo de "+q.t.toLowerCase()+": "+hhmm(a)); }
+      } else if (op.op === "set_water"){
+        const g = Math.max(4, Math.min(8, parseInt(op.garrafas)||6)); c.water = g; done.push("meta de água: "+L(g*0.5)+" L");
+      } else if (op.op === "set_streak_min"){
+        const n = Math.max(3, Math.min(10, parseInt(op.n)||6)); c.streakMin = n; done.push("mínimo pra fechar o dia: "+n+" missões");
+      } else if (op.op === "set_class"){
+        const dias = Array.isArray(op.dias) ? op.dias.map(Number).filter(n => n>=0 && n<=6) : c.aula.dias;
+        const ini = parseHour(op.inicio) ?? c.aula.ini, fim = parseHour(op.fim) ?? c.aula.fim;
+        c.aula = {dias, ini, fim}; done.push("aulas: "+(dias.length ? dias.map(n=>DIAS[n]).join(", ") : "nenhum dia")+", "+hhmm(ini)+"–"+hhmm(fim));
+      } else if (op.op === "set_walk_target"){
+        const m = op.min == null ? null : Math.max(15, Math.min(90, parseInt(op.min)||30)); c.walkMin = m; done.push(m ? "meta de caminhada fixa: "+m+" min" : "meta de caminhada: plano progressivo");
+      }
+    } catch(e){}
+  }
+  return done;
+}
+function configText(){
+  const c = cfg();
+  return [
+    "Água: "+L(c.water*0.5)+" L · mínimo pra fechar o dia: "+streakMin()+" missões",
+    "Aulas: "+(c.aula.dias.length ? c.aula.dias.map(n=>DIAS[n]).join(", ") : "nenhuma")+" "+hhmm(c.aula.ini)+"–"+hhmm(c.aula.fim),
+    "Caminhada: "+(c.walkMin ? c.walkMin+" min fixo" : "plano progressivo ("+walkTarget()+" min nesta semana)"),
+    "Missões principais hoje: "+missions().map(q => q.t+" [id "+q.id+(deadline(q) < 24 ? ", até "+hhmm(deadline(q)) : "")+"]").join("; "),
+    c.removed.length ? "Removidas: "+c.removed.join(", ") : "",
+    c.custom.length ? "Personalizadas: "+c.custom.map(q => q.t+(q.dias.length ? " ("+q.dias.map(n=>DIAS[n]).join(",")+")" : "")).join("; ") : ""
+  ].filter(Boolean).join("\n");
+}
+const HELP = `Comandos:
+/config — mostra a configuração atual
+/reset-config — volta tudo ao padrão
+/limpar — apaga o histórico do terminal
+Ou escreva normal:
+• registro: “tomei 2 garrafas”, “caminhei 3 km em 40 min”, “dormi 23h e acordei 7h”
+• ajuste: “cria missão estudar 1h seg a qui até 22h”, “muda prazo do café pra 7h30”, “tira a missão do sol”, “minha aula de sexta também é 8h”`;
+
+/* ================== terminal ================== */
+function renderChat(){
+  const log = $("chatlog"); log.innerHTML = "";
+  if (!state.chat.length) addMsgEl({r:"sys", t:"Conexão estabelecida.\nRegistre o que comeu, bebeu, caminhou, dormiu ou como está se sentindo. Também posso ajustar o app pra sua rotina. /ajuda pra ver os comandos."});
+  state.chat.slice(-60).forEach(addMsgEl);
+  log.scrollTop = log.scrollHeight;
+}
+function addMsgEl(m){
+  const el = document.createElement("div"); el.className = "msg "+(m.r === "me" ? "me" : "sys");
+  el.innerHTML = '<span class="who"></span><span class="body"></span>';
+  const when = m.at ? new Date(m.at).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}) : "";
+  el.querySelector(".who").textContent = (m.r === "me" ? "você" : "sistema")+(when ? " · "+when : "");
+  el.querySelector(".body").textContent = m.t;
+  if (m.fx){ const fx = document.createElement("span"); fx.className = "fx"; fx.textContent = m.fx; el.appendChild(fx); }
+  $("chatlog").appendChild(el); return el;
+}
+function contextText(){
+  const d = day(), pen = penalties();
+  const ws = [...state.weights].sort((a,b) => a.date.localeCompare(b.date));
+  return [
+    "Agora: "+new Date().toLocaleString("pt-BR",{weekday:"long",hour:"2-digit",minute:"2-digit",day:"numeric",month:"long"})+(isClassDay() ? " (dia de aula)" : ""),
+    "Perfil: homem, 25 anos, 1,77 m, começou com 101 kg. Estuda Análise e Desenvolvimento de Sistemas. Usa tirzepatida desde 03/11/2026 (primeira dose). Rotina do app desde "+state.start+". Sem musculação por enquanto.",
+    "Pesagens: "+(ws.length ? ws.map(w => w.date+" "+w.kg+"kg").join(", ") : "nenhuma ainda"),
+    "CONFIGURAÇÃO:\n"+configText(),
+    "Hoje: feitas ["+missions().filter(q => d.q[q.id]).map(q=>q.id).join(", ")+"]; pendentes ["+missions().filter(q => !d.q[q.id]).map(q => q.id+(isLate(q)?" (atrasada)":"")).join(", ")+"]",
+    "Água "+L(d.water*0.5)+" de "+L(waterGoal()*0.5)+" L; caminhada "+(d.walk||0)+" min / "+L(d.km||0)+" km; sono "+(sleepHours(d) ?? "não registrado")+" h; diário "+(journalDone(d)?"completo":"incompleto")+"; "+dayScore(d)+"/"+streakMin()+" pra fechar o dia; falhas manuais hoje: "+d.fails.length,
+    "Secundárias de hoje: "+sideToday().map(s => s.id+" = "+s.t+(d.side[s.id]?" (feita)":"")).join("; "),
+    "Consumo hoje (só registro, sem cobrança): "+(d.use.cig||0)+" cigarros, "+(d.use.bas||0)+" baseados, "+alcTotal(d.use)+" bebidas alcoólicas. O usuário fuma cerca de um maço por dia e maconha, e decidiu não parar agora.",
+    "Nível "+(Math.floor(totalXP()/XP_LEVEL)+1)+", sequência "+streak()+" dias, dias falhados "+pen.fails+".",
+    "Porquê do usuário: "+(state.why || "não escrito ainda")
+  ].join("\n");
+}
+const RULES = () => `Você é o SISTEMA, o terminal de um app de hábitos com estética Matrix, em português do Brasil. Fala como um sistema/treinador firme e direto: frases curtas, cobra compromisso, celebra vitórias reais. Toque de terminal com moderação.
+Regras inegociáveis:
+- Rigoroso com o plano, nunca cruel: nada de humilhar, xingar, chamar de fraco, gordo ou fracassado. Falha se resolve com a próxima ação, não com culpa.
+- Nunca incentive pular refeições, jejum prolongado, comer muito pouco, exercício extremo ou perda de peso rápida. Não dê metas de calorias. Meta saudável: 0,5 a 1 kg por semana.
+- O usuário usa tirzepatida. Nunca sugira mudar, dobrar ou parar dose: é com o médico. Se relatar dor abdominal forte (principalmente lado direito ou indo para as costas), vômitos persistentes, sinais de desidratação, tontura forte, dor no peito, desmaio ou alergia, saia do personagem e diga para procurar atendimento médico agora.
+- Se mostrar tristeza intensa, ansiedade forte, culpa pesada com comida, compulsão ou vontade de vomitar o que comeu, saia do personagem: acolha, sem cobrança, e sugira conversar com um profissional ou alguém de confiança.
+- Você não é médico nem nutricionista.
+- Cigarro, maconha e álcool: o usuário decidiu não parar agora. Apenas registre, sem cobrar, sem sermão e sem tratar como falha. Só toque no assunto se tiver relação direta com algo que ele relatou: vômitos repetidos com uso frequente de maconha podem ser hiperêmese canabinoide (orientar atendimento se não passar); álcool pode piorar o enjoo da tirzepatida; larica pode ser contornada com lanches bons já prontos.
+- Resposta com no máximo 4 frases curtas.
+REGISTROS: só registre o que o usuário disser claramente que FEZ hoje.
+- "marcar": ids de missões principais cumpridas (ids da configuração).
+- "secundarias": ids de missões secundárias de hoje cumpridas.
+- "agua_garrafas": garrafas de 500 ml A MAIS relatadas nesta mensagem (copo de 250 ml = meia garrafa, arredonde para baixo; 0 se não falou).
+- "caminhada_min" / "caminhada_km": totais de hoje que ele relatou, ou null.
+- "sono": {"dormiu":"HH:MM","acordou":"HH:MM"} se ele relatou horários de sono, senão null.
+- "consumo": quantidades A MAIS relatadas nesta mensagem, ex. {"cigarros":2,"baseados":1,"cerveja":0,"chopp":0,"vinho":0,"destilado":0,"drink":0}, ou null. Fumar ou beber NUNCA é falha.
+- "falha": texto curto se ele admitir que saiu do plano hoje (comeu fora, pulou caminhada etc.), senão null. Ao registrar falha, a resposta foca na próxima ação concreta.
+AJUSTES DO APP: só quando ele pedir explicitamente uma mudança no app. Operações em "config":
+{"op":"add_mission","t":"título curto","d":"detalhe","xp":5-40,"ate":"HH:MM ou null","dias":[0-6, 0=domingo, vazio=todo dia]}
+{"op":"remove_mission","id":"id"} {"op":"restore_mission","id":"id"} {"op":"set_deadline","id":"id","ate":"HH:MM ou null pra padrão"}
+{"op":"set_water","garrafas":4-8} {"op":"set_streak_min","n":3-10} {"op":"set_class","dias":[...],"inicio":"HH:MM","fim":"HH:MM"} {"op":"set_walk_target","min":15-90 ou null}
+Recuse ajustes que prejudiquem a saúde (jejum, pular refeição, água acima de 4 L, treino extremo, metas de peso agressivas) e explique em uma frase. Confirme na resposta o que mudou.
+Responda APENAS com JSON:
+{"resposta":"texto","marcar":[],"secundarias":[],"agua_garrafas":0,"caminhada_min":null,"caminhada_km":null,"sono":null,"consumo":null,"falha":null,"config":[]}`;
+
+let sending = false;
+async function sendChat(){
+  const inp = $("chatIn"), text = inp.value.trim();
+  if (!text || sending) return;
+  inp.value = "";
+  state.chat.push({r:"me", t:text, at:Date.now()});
+  const cmd = text.toLowerCase();
+  if (cmd === "/ajuda" || cmd === "/help"){ state.chat.push({r:"sys", t:HELP, at:Date.now()}); renderChat(); changed(); return; }
+  if (cmd === "/config"){ state.chat.push({r:"sys", t:configText(), at:Date.now()}); renderChat(); changed(); return; }
+  if (cmd === "/reset-config"){ state.cfg = DEFAULT_CFG(); state.chat.push({r:"sys", t:"Configuração restaurada ao padrão.", at:Date.now()}); renderChat(); changed(); return; }
+  if (cmd === "/limpar"){ state.chat = []; renderChat(); changed(); return; }
+  if (!sample){ state.chat.push({r:"sys", t:"O sistema está offline. Configure o servidor em Status › Servidor do sistema. Os comandos /config, /reset-config e /limpar funcionam mesmo assim.", at:Date.now()}); renderChat(); changed(); return; }
+  sending = true; $("chatSend").disabled = true; renderChat();
+  const wait = addMsgEl({r:"sys", t:""}); wait.querySelector(".body").innerHTML = '<span class="cursor">&nbsp;</span>';
+  $("chatlog").scrollTop = $("chatlog").scrollHeight;
+  const hist = state.chat.slice(-12, -1).map(m => (m.r === "me" ? "USUÁRIO: " : "SISTEMA: ")+m.t).join("\n");
+  const prompt = RULES()+"\n\n--- ESTADO ATUAL ---\n"+contextText()+"\n\n--- CONVERSA RECENTE ---\n"+(hist || "(início)")+"\n\n--- NOVA MENSAGEM DO USUÁRIO ---\n"+text;
+  try {
+    const out = await sample.json([{role:"user", content:prompt}], {cache:false, modelTier:"default"});
+    const d = day(), fx = [];
+    const valid = new Set(missions().map(q => q.id));
+    for (const id of (Array.isArray(out.marcar) ? out.marcar : [])) if (valid.has(id) && !d.q[id]){ d.q[id] = true; fx.push(findMission(id).t.toLowerCase()); }
+    const sv = new Set(sideToday().map(s => s.id));
+    for (const id of (Array.isArray(out.secundarias) ? out.secundarias : [])) if (sv.has(id) && !d.side[id]){ d.side[id] = true; fx.push("secundária: "+SIDE.find(s=>s.id===id).t.toLowerCase()); }
+    const g = Math.max(0, Math.min(8, parseInt(out.agua_garrafas)||0));
+    if (g){ d.water = Math.min(Math.max(8, waterGoal()), d.water + g); fx.push("+"+L(g*0.5)+" L de água"); }
+    const cm = parseInt(out.caminhada_min); if (cm > 0 && cm <= 300){ d.walk = Math.max(d.walk||0, cm); fx.push("caminhada "+d.walk+" min"); }
+    const ck = parseFloat(out.caminhada_km); if (ck > 0 && ck <= 50){ d.km = Math.max(d.km||0, Math.round(ck*10)/10); fx.push(L(d.km)+" km"); }
+    if (out.sono && /^\d{1,2}:\d{2}$/.test(out.sono.dormiu||"") && /^\d{1,2}:\d{2}$/.test(out.sono.acordou||"")){
+      d.sleep = {a: out.sono.dormiu.padStart(5,"0"), b: out.sono.acordou.padStart(5,"0")}; syncSleep(d); fx.push("sono "+L(sleepHours(d))+" h");
+    }
+    if (out.falha){ d.fails.push({t:String(out.falha).slice(0,80), at:Date.now()}); fx.push("falha registrada −"+PEN_MANUAL+" XP"); }
+    if (out.consumo && typeof out.consumo === "object"){
+      const n = v => Math.max(0, Math.min(40, parseInt(v)||0)), parts = [];
+      const c = n(out.consumo.cigarros), b = n(out.consumo.baseados);
+      if (c){ d.use.cig = (d.use.cig||0) + c; parts.push(c+" cigarro(s)"); }
+      if (b){ d.use.bas = (d.use.bas||0) + b; parts.push(b+" baseado(s)"); }
+      for (const [k] of ALC_ITEMS){ const v = n(out.consumo[k]); if (v){ d.use.alc[k] = (d.use.alc[k]||0) + v; parts.push(v+" "+k); } }
+      if (parts.length) fx.push("consumo: +"+parts.join(", +"));
+    }
+    const conf = applyConfig(out.config); if (conf.length) fx.push("config: "+conf.join("; "));
+    state.chat.push({r:"sys", t:String(out.resposta || "Registro recebido."), at:Date.now(), fx: fx.length ? "atualizado: "+fx.join(", ") : ""});
+  } catch(e){
+    const msg = e && e.code === "rate_limited" ? "Muitas mensagens seguidas. Espere um pouco e tente de novo." : e && e.code === "not_granted" ? "O acesso ao sistema não foi liberado nesta página." : "Falha na conexão com o sistema. Tente de novo.";
+    state.chat.push({r:"sys", t:msg, at:Date.now()});
+  }
+  state.chat = state.chat.slice(-80);
+  sending = false; $("chatSend").disabled = false;
+  renderChat(); changed();
+}
+$("chatSend").onclick = sendChat;
+$("chatIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); sendChat(); } });
+
+/* ================== salvar ================== */
+let saveTimer, saving = Promise.resolve();
+function changed(){ render(); clearTimeout(saveTimer); saveTimer = setTimeout(() => { persist(); scheduleReminders(); }, 700); }
+function persist(){
+  saving = saving.then(async () => {
+    try { if (store) await store.save(state); $("saved").textContent = "Progresso sincronizado."; }
+    catch(e){ $("saved").textContent = "Não foi possível salvar agora. Tentando de novo na próxima alteração."; }
+  });
+}
+const LS = "modo-missao-v1";
+const localStore = {
+  async load(){ try { const s = localStorage.getItem(LS); return s ? JSON.parse(s) : null; } catch(e){ return null; } },
+  async save(s){ try { localStorage.setItem(LS, JSON.stringify(s)); } catch(e){} }
+};
+
+/* ================== entradas ================== */
+function syncSleep(d){ const h = sleepHours(d); if (h != null && missions().some(q => q.id === "sono")){ const ok = h >= 7 && h <= 9; if (ok && !d.q.sono) toast("Sono: +15 XP"); d.q.sono = ok; } }
+$("sleepA").addEventListener("change", e => { const d = day(); d.sleep.a = e.target.value; syncSleep(d); changed(); });
+$("sleepB").addEventListener("change", e => { const d = day(); d.sleep.b = e.target.value; syncSleep(d); changed(); });
+$("walkMin").addEventListener("input", e => { day().walk = Math.max(0, Math.min(300, parseInt(e.target.value)||0)); changed(); });
+$("walkKm").addEventListener("input", e => { const v = parseFloat(String(e.target.value).replace(",", ".")); day().km = v > 0 ? Math.min(50, v) : 0; changed(); });
+$("walkSteps").addEventListener("input", e => { day().steps = Math.max(0, Math.min(80000, parseInt(e.target.value)||0)); changed(); });
+["j1","j2","j3"].forEach((id,i) => $(id).addEventListener("input", e => { day().j[i] = e.target.value; changed(); }));
+$("why").addEventListener("input", e => { state.why = e.target.value; changed(); });
+$("recipeGen").onclick = genRecipe;
+$("musicGen").onclick = genAlbum;
+$("musicTaste").addEventListener("input", e => { mstate().taste = e.target.value.slice(0,200); changed(); });
+$("reroll").onclick = () => {
+  const d = day(); if (d.reroll) return;
+  const picks = sideToday(), target = picks.find(s => !d.side[s.id]); if (!target) return;
+  d.keep = picks.filter(p => p !== target).map(p => p.id); d.rerolled = target.id; d.reroll = true;
+  toast("Missão trocada"); changed();
+};
+$("saveWeight").onclick = () => {
+  const v = parseFloat(String($("weight").value).replace(",", "."));
+  if (!v || v < 30 || v > 300){ toast("Digite um peso válido em kg", true); return; }
+  const k = todayKey(); state.weights = state.weights.filter(w => w.date !== k); state.weights.push({date:k, kg:Math.round(v*10)/10});
+  week().q.pesar = true; $("weight").value = ""; toast("Peso registrado. +30 XP"); changed();
+};
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  ["dia","terminal","cardapio","semana","conquistas"].forEach(t => $("tab-"+t).hidden = (t !== b.dataset.tab));
+  if (b.dataset.tab === "terminal") renderChat();
+});
+
+$("chitBtn").onclick = () => { $("chitOv").hidden = false; renderChit(); };
+$("chitGen").onclick = genChit;
+$("chitCopy").onclick = async () => { const c = chitState().hist[0]; if (!c) return; try { await navigator.clipboard.writeText(c.texto); toast("Copiado"); } catch(e){ toast("Não deu pra copiar aqui", true); } };
+$("sosBtn").onclick = openSOS;
+$("bkGen").onclick = () => { const t = $("bkOut"); t.readOnly = true; t.value = JSON.stringify(state); t.hidden = false; $("bkCopy").hidden = false; $("bkApply").hidden = true; t.focus(); t.select(); };
+$("bkCopy").onclick = async () => { const t = $("bkOut"); try { await navigator.clipboard.writeText(t.value); toast("Backup copiado"); } catch(e){ t.focus(); t.select(); toast("Selecionei o texto: copie manualmente", true); } };
+$("bkPaste").onclick = () => { const t = $("bkOut"); t.readOnly = false; t.value = ""; t.hidden = false; $("bkCopy").hidden = true; $("bkApply").hidden = false; t.focus(); };
+$("bkApply").onclick = () => {
+  try { const obj = JSON.parse($("bkOut").value.trim()); if (!obj || typeof obj !== "object" || !obj.days) throw 0;
+    merge(obj); $("bkOut").hidden = true; $("bkApply").hidden = true; toast("Backup importado"); changed();
+  } catch(e){ toast("Código de backup inválido", true); }
+};
+for (const ov of [$("chitOv"), $("sosOv")]){
+  ov.addEventListener("click", e => { if (e.target === ov || e.target.closest("[data-close]")) closeOv(ov); });
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") for (const id of ["chitOv","sosOv"]) if (!$(id).hidden) closeOv($(id)); });
+
+/* ================== chuva digital ================== */
+(function(){
+  const cv = $("rain"); if (!cv || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const ctx = cv.getContext("2d"), chars = "アイウエオカキクケコサシスセソ0123456789MISSÃO";
+  let cols = [], fs = 14, color;
+  function size(){ cv.width = cv.offsetWidth; cv.height = cv.offsetHeight; cols = Array(Math.ceil(cv.width/fs)).fill(0).map(() => Math.random()*-20); color = getComputedStyle(document.documentElement).getPropertyValue("--rain").trim() || "#00FF41"; }
+  size(); addEventListener("resize", size);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", size);
+  setInterval(() => {
+    ctx.clearRect(0,0,cv.width,cv.height); ctx.fillStyle = color; ctx.font = fs+"px monospace";
+    cols.forEach((y,i) => {
+      for (let k=0;k<8;k++){ ctx.globalAlpha = (8-k)/12; ctx.fillText(chars[(Math.random()*chars.length)|0], i*fs, (y-k)*fs); }
+      cols[i] = y*fs > cv.height + 8*fs && Math.random() > .95 ? 0 : y + 1;
+    });
+  }, 90);
+})();
+
+/* ================== início ================== */
+function merge(s){
+  if (s && typeof s === "object") state = Object.assign({start:todayKey(), days:{}, weeks:{}, weights:[], why:"", chat:[]}, s);
+  state.chat ||= []; state.recipes ||= {};
+  state.cfg = Object.assign(DEFAULT_CFG(), state.cfg || {});
+}
+setInterval(() => { renderConsole(); renderDaily(); }, 60000);
+
+/* ================== plataforma ================== */
+const PLATFORM = window.desktop ? "windows" : (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ? "android" : "web";
+const SETTINGS_KEY = "modo-missao-servidor";
+function getSettings(){ try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch(e){ return {}; } }
+function setSettings(v){ try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)); } catch(e){} }
+
+/* IA pelo servidor próprio (api/sistema.js) */
+function makeSample(){
+  const st = getSettings();
+  const url = st.url || (PLATFORM === "web" && location.protocol === "https:" ? location.origin : "");
+  if (!url) return null;
+  const base = url.trim().replace(/\/+$/, "");
+  async function call(input, opts = {}){
+    const messages = typeof input === "string" ? [{role:"user", content:input}] : input;
+    let r;
+    try {
+      r = await fetch(base + "/api/sistema", {method:"POST", headers:{"Content-Type":"application/json", "x-app-token": st.token || ""}, body: JSON.stringify({messages, tier: opts.modelTier || "default"})});
+    } catch(e){ throw {code:"network"}; }
+    if (r.status === 429) throw {code:"rate_limited"};
+    if (r.status === 401) throw {code:"not_granted"};
+    if (!r.ok) throw {code:"network"};
+    const d = await r.json(); return {text: d.text || "", truncated: false};
+  }
+  const f = (i, o) => call(i, o);
+  f.json = async (i, o) => {
+    const {text} = await call(i, o);
+    const clean = text.replace(/```json|```/g, "").trim(), a = clean.indexOf("{"), b = clean.lastIndexOf("}");
+    try { return JSON.parse(clean.slice(a, b + 1)); } catch(e){ throw {code:"invalid_json", text}; }
+  };
+  return f;
+}
+
+/* ================== notificações ================== */
+const LN = () => window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+let webTimers = [];
+const notifier = {
+  async status(){
+    if (PLATFORM === "windows") return "granted";
+    if (PLATFORM === "android"){ const ln = LN(); if (!ln) return "unavailable"; const p = await ln.checkPermissions(); return p.display === "granted" ? "granted" : p.display === "denied" ? "denied" : "default"; }
+    if (!("Notification" in window)) return "unavailable";
+    return Notification.permission;
+  },
+  async request(){
+    if (PLATFORM === "windows") return true;
+    if (PLATFORM === "android"){ const ln = LN(); if (!ln) return false; const p = await ln.requestPermissions(); return p.display === "granted"; }
+    if (!("Notification" in window)) return false;
+    return (await Notification.requestPermission()) === "granted";
+  },
+  async schedule(list){
+    if (PLATFORM === "windows"){ await window.desktop.schedule(list.map(n => ({...n, at: n.at.getTime()}))); return; }
+    if (PLATFORM === "android"){
+      const ln = LN(); if (!ln) return;
+      const pend = await ln.getPending();
+      if (pend.notifications.length) await ln.cancel({notifications: pend.notifications.map(n => ({id: n.id}))});
+      if (list.length) await ln.schedule({notifications: list.map(n => ({id: n.id, title: n.title, body: n.body, schedule: {at: n.at, allowWhileIdle: true}}))});
+      return;
+    }
+    webTimers.forEach(clearTimeout); webTimers = [];
+    if (Notification.permission !== "granted") return;
+    for (const n of list){ const ms = n.at - Date.now(); if (ms > 0 && ms < 2147483647) webTimers.push(setTimeout(() => new Notification(n.title, {body: n.body, icon: "icons/icon-192.png"}), ms)); }
+  }
+};
+function atHour(k, h){ const d = parseKey(k); d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0); return d; }
+function buildReminders(){
+  const out = [], now = Date.now(), add = (at, title, body) => { if (at.getTime() > now + 30000) out.push({id: out.length + 1, at, title, body}); };
+  const today = todayKey();
+  for (let off = 0; off < 3; off++){
+    const dt = parseKey(today); dt.setDate(dt.getDate() + off); const k = keyOf(dt);
+    const d = state.days[k] ? day(k) : {q:{}, water:0, walk:0, j:["","",""], side:{}};
+    const aula = isClassDay(k), a = cfg().aula;
+    add(atHour(k, aula ? a.ini - 1.5 : 7.5), "BRIEFING // "+DIAS[dt.getDay()], aula ? "Dia de aula. Abra o app, veja as missões e leve água e lanche." : "Dia livre. Abra o app e veja as missões do dia.");
+    for (const q of missions(k)){
+      const dl = deadline(q, k);
+      if (dl < 24 && !d.q[q.id]) add(atHour(k, Math.max(0, dl - 0.5)), "[COBRANÇA] " + q.t, "Prazo às " + hhmm(dl) + ". Faltam 30 minutos.");
+    }
+    for (const h of [11, 14, 17, 20]){
+      const exp = Math.floor((h - 8) / 13 * waterGoal());
+      if (off > 0 || d.water < exp) add(atHour(k, h), "[ÁGUA]", "Pelo horário você devia estar em " + L(exp * 0.5) + " L. Uma garrafa agora.");
+    }
+    if (!walkDone(d)) add(atHour(k, 18), "[CAMINHADA]", "Meta de hoje: " + walkTarget() + " min. Bora.");
+    if (dayScore(d, k) < streakMin()) add(atHour(k, 20), "[STATUS]", "Faltam " + (streakMin() - dayScore(d, k)) + " missões pra não falhar o dia.");
+    if (!journalDone(d)) add(atHour(k, 21.5), "[DIÁRIO]", "Feche o dia: três respostas, três minutos.");
+  }
+  return out.slice(0, 60);
+}
+let schedTimer;
+function scheduleReminders(){
+  clearTimeout(schedTimer);
+  schedTimer = setTimeout(async () => {
+    if (!getSettings().notif) return;
+    try { const list = buildReminders(); await notifier.schedule(list); $("ntfState").textContent = "> ativas · " + list.length + " lembretes agendados"; }
+    catch(e){ $("ntfState").textContent = "> não foi possível agendar os lembretes"; }
+  }, 300);
+}
+async function renderNtf(){
+  const st = getSettings(), s = await notifier.status();
+  $("ntfOn").textContent = st.notif ? "Desativar notificações" : "Ativar notificações";
+  if (s === "unavailable") $("ntfState").textContent = "> notificações indisponíveis neste aparelho";
+  else if (s === "denied") $("ntfState").textContent = "> permissão negada. Libere nas configurações do sistema.";
+  else if (!st.notif) $("ntfState").textContent = "> desativadas";
+  if (PLATFORM === "web") $("ntfSub").textContent = "No navegador, os avisos só chegam com o app aberto. No app do Android ou do Windows eles chegam mesmo fechado.";
+  if (PLATFORM === "windows") $("ntfSub").textContent = "O app fica na bandeja do Windows e avisa mesmo com a janela fechada.";
+}
+$("ntfOn").onclick = async () => {
+  const st = getSettings();
+  if (st.notif){ st.notif = false; setSettings(st); await notifier.schedule([]); toast("Notificações desativadas"); renderNtf(); return; }
+  const ok = await notifier.request(); st.notif = ok; setSettings(st);
+  toast(ok ? "Notificações ativadas" : "Permissão negada", !ok); await renderNtf(); scheduleReminders();
+};
+
+/* ================== servidor ================== */
+$("apiSave").onclick = () => {
+  const st = getSettings(); st.url = $("apiUrl").value.trim(); st.token = $("apiToken").value; setSettings(st);
+  sample = makeSample(); $("apiState").textContent = sample ? "> servidor salvo" : "> sem servidor: modo offline"; toast("Configuração salva");
+};
+$("apiTest").onclick = async () => {
+  $("apiSave").onclick(); if (!sample) return;
+  $("apiState").textContent = "> testando…";
+  try { const r = await sample.json("Responda só com JSON: {\"ok\":true}", {modelTier:"quick"}); $("apiState").textContent = r && r.ok ? "> conexão OK" : "> resposta inesperada"; }
+  catch(e){ $("apiState").textContent = e.code === "not_granted" ? "> senha do app incorreta" : e.code === "rate_limited" ? "> limite atingido, tente depois" : "> não conectou. Confira o endereço."; }
+};
+
+/* links externos (YouTube Music) */
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest('a[target="_blank"]');
+  if (!a) return;
+  if (PLATFORM === "android"){ e.preventDefault(); window.location.href = a.href; }
+});
+
+/* ================== início ================== */
+(async () => {
+  store = localStore; merge(await localStore.load()); sample = makeSample();
+  const st = getSettings(); $("apiUrl").value = st.url || ""; $("apiToken").value = st.token || "";
+  $("apiState").textContent = sample ? "> servidor configurado" : "> sem servidor: modo offline";
+  render(); renderChat(); renderNtf(); scheduleReminders();
+  setInterval(scheduleReminders, 30 * 60000);
+  $("saved").textContent = "Progresso salvo neste aparelho.";
+  if (PLATFORM === "web" && "serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+  document.addEventListener("visibilitychange", () => { if (!document.hidden){ render(); scheduleReminders(); } });
+})();
+</script>
+</body></html>

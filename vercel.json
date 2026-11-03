@@ -1,0 +1,5 @@
+{
+  "installCommand": "echo sem dependencias",
+  "buildCommand": "echo sem build",
+  "outputDirectory": "www"
+}
