@@ -17,10 +17,29 @@
   "build": {
     "appId": "br.modomissao.app",
     "productName": "Modo Missão",
-    "files": ["main.js", "preload.js", "www/**/*", "build/icon.png", "build/tray.png"],
-    "directories": { "output": "dist", "buildResources": "build" },
-    "win": { "icon": "build/icon.ico", "artifactName": "ModoMissao-${version}-${arch}-${target}.${ext}" },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Modo Missão" },
-    "portable": { "artifactName": "ModoMissao-${version}-portatil.exe" }
+    "files": [
+      "main.js",
+      "preload.js",
+      "www/**/*",
+      "build/icon.png",
+      "build/tray.png"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Modo Missão",
+      "artifactName": "ModoMissao-${version}-instalador.${ext}"
+    },
+    "portable": {
+      "artifactName": "ModoMissao-${version}-portatil.exe"
+    }
   }
 }
